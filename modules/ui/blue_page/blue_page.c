@@ -530,59 +530,70 @@ void guiCreate_b(void)
 void guiUpdate_b(void){
 //	RunPath();
 	gwinClear(Console);
-	gwinPrintf(Console, "SHT  %4d\033t  ", M[4].SetPoint);
-	gwinPrintf(Console, "PIT  %4d\033t  ", getPitch());//M[5].Board.ADCValue
-	gwinPrintf(Console, "ROL  %4d\033t  ", getRoll());//M[4].Board.ADCValue
-	gwinPrintf(Console, "X  %5d\033t  ", distanceSum);
-	gwinPrintf(Console, "Y  %5d\033t\r\n", (int)yDistance);
-	gwinPrintf(Console, "SPUS2 %3d\033t  ", Servo1.command[2]);
-	gwinPrintf(Console, "SPIT1 %3d\033t  ", Servo1.command[1]);
-	gwinPrintf(Console, "SROL0 %3d\033t  ", Servo1.command[0]);
-	gwinPrintf(Console, "ALIVE %3d\033t  \r\n", shooterAlive);
-	gwinPrintf(Console, "M01X %4d", (int)(M[0].Feedback));
-	gwinPrintf(Console, ",%4d", (int)(M[1].Feedback));
-	gwinPrintf(Console, " M23U %4d", (int)(M[2].Feedback));
-	gwinPrintf(Console, ",%4d", (int)(M[3].Feedback));
-	gwinPrintf(Console, " M45S %4d", (int)(M[4].Feedback));
-	gwinPrintf(Console, ",%4d", (int)(M[5].Feedback));
-	gwinPrintf(Console, " M6Y %4d\r\n", (int)(M[6].Feedback));
-
+	gwinPrintf(Console, "SHT  %4d\033t ", M[4].SetPoint);
+	gwinPrintf(Console, "PIT  %4d\033t ", getPitch());//M[5].Board.ADCValue
+	gwinPrintf(Console, "ROL  %4d\033t ", getRoll());//M[4].Board.ADCValue
+	gwinPrintf(Console, "XXX  %4d\033t ", distanceSum);
+	gwinPrintf(Console, "YDS  %4d\033t\r\n", (int)yDistance);
+//    gwinPrintf(Console, "D_S %4d\033t ", blueStateSet[targetPosition].shootspd - M[4].SetPoint);
+//    gwinPrintf(Console, "D_P %4d\033t ", blueStateSet[targetPosition].pitch - getPitch());
+//    gwinPrintf(Console, "D_R %4d\033t ", blueStateSet[targetPosition].roll - getRoll());
+    gwinPrintf(Console, "D_X %4d\033t\r\n", blueStateSet[targetPosition].x - distanceSum);
+    gwinPrintf(Console, "D_Y %4d\033t\r\n", (int)yDistance - blueStateSet[targetPosition].y);
+//	gwinPrintf(Console, "SPUS2 %3d\033t  ", Servo1.command[2]);
+//	gwinPrintf(Console, "SPIT1 %3d\033t  ", Servo1.command[1]);
+//	gwinPrintf(Console, "SROL0 %3d\033t  ", Servo1.command[0]);
+//	gwinPrintf(Console, "ALIVE %3d\033t  \r\n", shooterAlive);
+//	gwinPrintf(Console, "M01X %4d", (int)(M[0].Feedback));
+//	gwinPrintf(Console, ",%4d", (int)(M[1].Feedback));
+//	gwinPrintf(Console, " M23U %4d", (int)(M[2].Feedback));
+//	gwinPrintf(Console, ",%4d", (int)(M[3].Feedback));
+//	gwinPrintf(Console, " M45S %4d", (int)(M[4].Feedback));
+//	gwinPrintf(Console, ",%4d", (int)(M[5].Feedback));
+//	gwinPrintf(Console, " M6Y %4d\r\n", (int)(M[6].Feedback));
 
 //	gwinClear(Console1);
-
-
-	gwinClear(Console2);
-	gwinPrintf(Console2, "D0: %d\r\n", debug_display[0]);
-	gwinPrintf(Console2, "D1: %d\r\n", debug_display[1]);
-	gwinPrintf(Console2, "D2: %d\r\n", debug_display[2]);
-	gwinPrintf(Console2, "D3: %d\r\n", debug_display[3]);
-	gwinPrintf(Console2, "D4: %d\r\n", debug_display[4]);
-	gwinPrintf(Console2, "D5: %d\r\n", debug_display[5]);
-	gwinPrintf(Console2, "D6: %d\r\n", debug_display[6]);
-	gwinPrintf(Console2, "D7: %d\r\n", debug_display[7]);
-	gwinPrintf(Console2, "D8: %d\r\n", debug_display[8]);
-	gwinPrintf(Console2, "D9: %d\r", debug_display[9]);
+    gwinClear(Console2);
+    gwinPrintf(Console2, "TRGT VAL\r\n");
+    gwinPrintf(Console2, "Pos: %d\r\n", blueStateSet[targetPosition].id);
+    gwinPrintf(Console2, "Pit: %d\r\n", blueStateSet[targetPosition].pitch);
+    gwinPrintf(Console2, "Rol: %d\r\n", blueStateSet[targetPosition].roll);
+    gwinPrintf(Console2, "Sht: %d\r\n", blueStateSet[targetPosition].shootspd);
+    gwinPrintf(Console2, "Xxx: %d\r\n", blueStateSet[targetPosition].x);
+    gwinPrintf(Console2, "Yyy: %d\r\n", blueStateSet[targetPosition].y);
 
 
 	gwinClear(Console3);
-    gwinPrintf(Console3, "LINE0: %d\r\n", LineSensor2016[0].status);
-    gwinPrintf(Console3, "LINE0: %d\r\n", LineSensor2016[0].position);
-    gwinPrintf(Console3, "SHOT: %d\r\n", M[4].SetPoint);
-    gwinPrintf(Console3, "M4: %d\r\n", M[4].Feedback);
-    gwinPrintf(Console3, "M5: %d\r\n", M[5].Feedback);
-    gwinPrintf(Console3, "M6: %d\r\n", M[6].Feedback);
+	gwinPrintf(Console3, "Ldis: %d\r\n", Ldisc);
+	gwinPrintf(Console3, "Rdis: %d\r\n", Rdisc);
+	gwinPrintf(Console3, "Cdis: %d\r\n", Cdisc);
+	gwinPrintf(Console3, "A6_R: %d\r\n", A6on);
+	gwinPrintf(Console3, "A7_L: %d\r\n", A7on);
 
-    gwinClear(Console4);
-    gwinPrintf(Console4, "Pos: %d\r\n", blueStateSet[targetPosition].id);
-    gwinPrintf(Console4, "Pit: %d\r\n", blueStateSet[targetPosition].pitch);
-    gwinPrintf(Console4, "Rol: %d\r\n", blueStateSet[targetPosition].roll);
-    gwinPrintf(Console4, "Sht: %d\r\n", blueStateSet[targetPosition].shootspd);
-    gwinPrintf(Console4, "Xxx: %d\r\n", blueStateSet[targetPosition].x);
-    gwinPrintf(Console4, "Yyy: %d\r\n", blueStateSet[targetPosition].y);
+	gwinClear(Console4);
+	gwinPrintf(Console4, "D0: %d\r\n", debug_display[0]);
+	gwinPrintf(Console4, "D1: %d\r\n", debug_display[1]);
+	gwinPrintf(Console4, "D2: %d\r\n", debug_display[2]);
+	gwinPrintf(Console4, "D3: %d\r\n", debug_display[3]);
+	gwinPrintf(Console4, "D4: %d\r\n", debug_display[4]);
+	gwinPrintf(Console4, "D5: %d\r\n", debug_display[5]);
+	gwinPrintf(Console4, "D6: %d\r\n", debug_display[6]);
+	gwinPrintf(Console4, "D7: %d\r\n", debug_display[7]);
+	gwinPrintf(Console4, "D8: %d\r\n", debug_display[8]);
+	gwinPrintf(Console4, "D9: %d\r", debug_display[9]);
 
 	gwinClear(Console5);
 	gwinPrintf(Console5, "BLUE FIELD \r\n");
-
+	if(encoder1_2.Alive <= 0) gwinPrintf(Console5, "EN GG\r\n");
+	if(M[0].timeout <= 0) gwinPrintf(Console5, "M0 GG\r\n");
+	if(M[1].timeout <= 0) gwinPrintf(Console5, "M1 GG\r\n");
+	if(M[2].timeout <= 0) gwinPrintf(Console5, "M2 GG\r\n");
+	if(M[3].timeout <= 0) gwinPrintf(Console5, "M3 GG\r\n");
+	if(M[4].timeout <= 0) gwinPrintf(Console5, "M4 GG\r\n");
+	if(M[5].timeout <= 0) gwinPrintf(Console5, "M5 GG\r\n");
+	if(M[6].timeout <= 0) gwinPrintf(Console5, "M6 GG\r\n");
+	if(Servo1.Alive <= 0) gwinPrintf(Console5, "S1 GG\r\n");
+//	if(airBoard.Alive <= 0) gwinPrintf(Console5, "AIR: %d\r\n");
 }
 
 //static char buf[8];

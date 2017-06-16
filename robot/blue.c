@@ -58,20 +58,20 @@ void displayDebug (void) {
 }
 
 PositionStates blueStateSet[10]={
-                                // {id      ,x      ,y      ,pitch  ,roll   ,shootspd   },
-                                //   {        ,       ,       ,       ,       ,           },
+// {id      ,x      ,y      ,pitch  ,roll   ,shootspd   },
+//   {        ,       ,       ,       ,       ,           },
 
-                                   {0       , 500    ,0      ,0      ,0      ,0          }, //Start Zone
-                                   {1       , -883   ,336    ,138    ,-80    ,905        },
-                                   {2       , -1864  ,250    ,228    ,128    ,1050       },
-                                   {3       , -4600  ,250    ,240    ,0      ,710        }, //Middle Near
-                                   {4       , -4454  ,398    ,191    ,220    ,1105       }, //Middle Middle
-                                   {5       , -2830  ,3453   ,184    ,183    ,1390       }, //Middle Far
-                                   {6       , -5730  ,350    ,212    ,132    ,1040       },
-                                   {7       , -7767  ,320    ,189    ,75     ,990        },
-                                   {8       , -12500 ,0      ,108    ,5      ,0          },  //Loading Zone
-                                   {9		, -5454	 ,0		 ,1		 ,-2	 ,1700		 }
-                                };
+   {0       , 500    ,0      ,0      ,0      ,0          }, //Start Zone
+   {1       , -883   ,336    ,138    ,-80    ,905        },
+   {2       , -1864  ,250    ,228    ,128    ,1050       },
+   {3       , -4600  ,250    ,240    ,0      ,710        }, //Middle Near
+   {4       , -4454  ,398    ,191    ,220    ,1105       }, //Middle Middle
+   {5       , -2830  ,3453   ,184    ,183    ,1390       }, //Middle Far
+   {6       , -5730  ,350    ,212    ,132    ,1040       },
+   {7       , -7767  ,320    ,189    ,75     ,990        },
+   {8       , -12500 ,0      ,108    ,5      ,0          },  //Loading Zone
+   {9		, -5154	 ,0		 ,1		 ,-2	 ,1700		 }
+};
 bool init = false;
 void RunPath (void) {
 	UpdatePosition();
@@ -97,15 +97,16 @@ void RunPath (void) {
       airSetState(&airBoard, 4, 1);
       airSetState(&airBoard, 0, 1);
       airSetState(&airBoard, 1, 1);
-      if (!BSwitch && !PS4_ButtonPress(TRIANGLE)){
-        M[6].SetPoint = -100;
-      }
-      else{
-        M[6].SetPoint = 0;
-        if (!DS4.circle){
-          init = true;
-        }
-      }
+//      if (!BSwitch && !PS4_ButtonPress(TRIANGLE)){
+//        M[6].SetPoint = -100;
+//      }
+//      else{
+//        M[6].SetPoint = 0;
+//        if (!DS4.circle){
+//          init = true;
+//        }
+//      }
+      init = true;
 	}
 	else{
         if(DS4.l2_trigger>200) {
@@ -150,35 +151,35 @@ void RunPath (void) {
 	        targetPosition = constrain(--targetPosition, 9, 0);
 	    }
 
-	    if(DS4.tpad_click){
-	      switch(DS4.tpad_info[0].finger[0].x / 400){
-	      case 0:
-	        targetPosition=1;
-	        break;
-	      case 1:
-	        targetPosition=2;
-	        break;
-	      case 2:
-	        switch(DS4.tpad_info[0].finger[0].y / 300){
-	        case 0:
-	          targetPosition=5;
-	          break;
-	        case 1:
-	          targetPosition=4;
-	          break;
-	        case 2:
-	          targetPosition=3;
-	          break;
-	        }
-	        break;
-	      case 3:
-	        targetPosition=6;
-	        break;
-	      case 4:
-	        targetPosition=7;
-	        break;
-	      }
-	    }
+//	    if(DS4.tpad_click){
+//	      switch(DS4.tpad_info[0].finger[0].x / 400){
+//	      case 0:
+//	        targetPosition=1;
+//	        break;
+//	      case 1:
+//	        targetPosition=2;
+//	        break;
+//	      case 2:
+//	        switch(DS4.tpad_info[0].finger[0].y / 300){
+//	        case 0:
+//	          targetPosition=5;
+//	          break;
+//	        case 1:
+//	          targetPosition=4;
+//	          break;
+//	        case 2:
+//	          targetPosition=3;
+//	          break;
+//	        }
+//	        break;
+//	      case 3:
+//	        targetPosition=6;
+//	        break;
+//	      case 4:
+//	        targetPosition=7;
+//	        break;
+//	      }
+//	    }
 
         if(PS4_ButtonPress(PS)&& DS4.cross) {
           pusher(true);

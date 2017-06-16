@@ -63,21 +63,21 @@ typedef enum tagDrivingState {
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)
 #define USE_MOTOR_7                 FALSE
 #define IS_MOTOR_7_DC               FALSE
-#define IS_MOTOR_7_2016				TRUE
+#define IS_MOTOR_7_2016				FALSE
 #endif
 
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)
 #define USE_ENCODER                 TRUE
-#define ENCODER_NUMBER              4
+#define ENCODER_NUMBER              2
 #endif
 
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)
 #define USE_SERVO                   TRUE
-#define SERVO_NUMBER                8
+#define SERVO_NUMBER                3
 #endif
 
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)
-#define USE_LINESENSOR_0            TRUE
+#define USE_LINESENSOR_0            FALSE
 #define IS_LINESENSOR_0_2016 		TRUE
 #define LINESENSOR_0_SIZE             24//how many line sensor module i use per line, only need to define if using old line sensor
 #endif

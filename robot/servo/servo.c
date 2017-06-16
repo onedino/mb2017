@@ -14,7 +14,7 @@
 
 //new servo board 200 - 550
 
-servo_t Servo1 = {.command={417, 388, 490/*290*/, 370, 370, 370, 370, 370}, .Alive = 0};
+servo_t Servo1 = {.command={416, 390, 490/*290*/, 370, 370, 370, 370, 370}, .Alive = 0};
 servo_t Servo2 = {.command={400, 400, 400, 400, 400, 400, 400, 400}, .Alive = 0};
 
 

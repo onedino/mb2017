@@ -194,6 +194,13 @@ float constrain(float value, float positiveLimit, float negativeLimit);
 float accelerationLimit_krpm(float speed, float oldSpeed,float upperLimit, float lowerLimit);
 int accelerationLimit(int speed, int oldSpeed,int upperLimit, int lowerLimit);
 
-extern int asdasd;
+extern int Rdisc;
+extern int Ldisc;
+extern int Cdisc;
+extern int A6on;
+extern int A7on;
+
+extern unsigned int rightLoaderAlive;
+
 #endif /* COMMON_H_ */
 //rip

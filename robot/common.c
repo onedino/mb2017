@@ -36,7 +36,7 @@ int debug_display[10]={};
 const int HatDeadzone = 10;
 const int upLimit = 5300;// in terms of SetPoint (Motor Board Max Limit 53XX)
 const int lowLimit = -5300;
-const int acceleration_limit = 60;//60;
+const int acceleration_limit = 60;//60 in hku 190 in hkstp, remember to check deaccel too;
 
 //for ps4 button debounce
 int old_r1_state,old_l1_state,old_dpad_state;
@@ -45,6 +45,14 @@ int old_circle_state, old_square_state,old_cross_state,old_triangle_state;
 int circleAlive = 0;
 int dpadUPAlive = 0;
 int dpadDOWNAlive = 0;
+
+int Rdisc = 0;
+int Ldisc = 0;
+int Cdisc = 0;
+
+int A6on = 0;
+int A7on = 0;
+int reloadInit = 0;
 
 //===============================================
 //Wizley Defined Variables
@@ -142,40 +150,40 @@ bool LSOnline_prev = false;
 int LSCounter = 0;
 int LSState = 0;
 void Linesensor(void){
-  int returnval=0;
-  if (LineSensor2016[0].status == 1 && LSOnline_prev){
-    if(LSCounter > 0){
-      LSCounter--;
-    }
-    else if (LSCounter == 0){
-      LSCounter--;
-      returnval= 1;
-    }
-    else if (LSCounter == -1){
-      returnval= 2;
-    }
-  }
-  else if (LineSensor2016[0].status != 1 && !LSOnline_prev){
-    if(LSCounter > 0){
-      LSCounter--;
-    }
-    else if (LSCounter == 0){
-      LSCounter--;
-      returnval= -1;
-    }
-    else if (LSCounter == -1){
-      returnval= -2;
-    }
-  }
-  else if (LineSensor2016[0].status == 1 && !LSOnline_prev){
-    LSCounter = 10;
-  }
-  else if (LineSensor2016[0].status != 1 && LSOnline_prev){
-    LSCounter = 10;
-  }
-
-  LSOnline_prev = (LineSensor2016[0].status == 1);
-  LSState = returnval;
+//  int returnval=0;
+//  if (LineSensor2016[0].status == 1 && LSOnline_prev){
+//    if(LSCounter > 0){
+//      LSCounter--;
+//    }
+//    else if (LSCounter == 0){
+//      LSCounter--;
+//      returnval= 1;
+//    }
+//    else if (LSCounter == -1){
+//      returnval= 2;
+//    }
+//  }
+//  else if (LineSensor2016[0].status != 1 && !LSOnline_prev){
+//    if(LSCounter > 0){
+//      LSCounter--;
+//    }
+//    else if (LSCounter == 0){
+//      LSCounter--;
+//      returnval= -1;
+//    }
+//    else if (LSCounter == -1){
+//      returnval= -2;
+//    }
+//  }
+//  else if (LineSensor2016[0].status == 1 && !LSOnline_prev){
+//    LSCounter = 10;
+//  }
+//  else if (LineSensor2016[0].status != 1 && LSOnline_prev){
+//    LSCounter = 10;
+//  }
+//
+//  LSOnline_prev = (LineSensor2016[0].status == 1);
+//  LSState = returnval;
 }
 
 //encoder usage
@@ -185,11 +193,13 @@ long long LencoderSum = 0;
 long long RencoderSum = 0;
 long yEncoderOffset=0;
 int32_t distance_1, distance_2;
-int distanceSum;
+int distanceSum = 0, lDistanceSum =0, rDistanceSum = 0;
 float yDistance;
 float something;
 long xDistanceOffset = -500;//offset of the Origin to the Line
 long long encoderSum = 0;
+bool encoderLeftError = false;
+bool encoderRightError = false;
 void UpdatePosition(void) {
     update_shooter_flags();
     //common code for motor, encoder and line sensor
@@ -201,46 +211,52 @@ void UpdatePosition(void) {
       LencoderSum += (int16_t)encoder1_2.delta_count[0];
       RencoderSum += (int16_t)encoder1_2.delta_count[1];
     }
-    if (abs(LencoderSum) > abs(RencoderSum) + 4000){
+    if (abs(LencoderSum) > abs(RencoderSum) + 4500){
       encoderSum = 2 * LencoderSum;
+      RencoderSum = 0;
     }
-    else if (abs(RencoderSum) > abs(LencoderSum) + 4000) {
+    else if (abs(RencoderSum) > abs(LencoderSum) + 4500) {
       encoderSum = 2 * RencoderSum;
+      LencoderSum = 0;
     }
     else{
       encoderSum = LencoderSum+RencoderSum;
-    }
+    }//667170
+    lDistanceSum =((float) LencoderSum * 13000.0 / 333585) + xDistanceOffset;//354708
+    rDistanceSum =((float) RencoderSum * 13000.0 / 333585) + xDistanceOffset;//357559
+
+
 
     yDistance = (long long)(M[6].Board.EncoderCount-yEncoderOffset) *500 / 395473;
 
-    debug_display[7] = LencoderSum;
-    debug_display[8] = RencoderSum;
-
-    int LSpos = 1911 - LineSensor2016[0].position; //line at right = -ve, line at left = +ve;
-    Linesensor();
-    switch(LSState){
-      case 2: //Online
-        break;
-
-      case -2: //Offline
-        break;
-
-      case 1: //Rising Edge
-        if(LSpos>0){
-          polezone ++;
-        }
-        else{
-          polezone --;
-        }
-        break;
-
-      case -1: //Falling Edge
-        break;
-
-      default: //Unknown State
-        break;
-
-    }
+    debug_display[7] = lDistanceSum;
+    debug_display[8] = rDistanceSum;
+//
+//    int LSpos = 1911 - LineSensor2016[0].position; //line at right = -ve, line at left = +ve;
+//    Linesensor();
+//    switch(LSState){
+//      case 2: //Online
+//        break;
+//
+//      case -2: //Offline
+//        break;
+//
+//      case 1: //Rising Edge
+//        if(LSpos>0){
+//          polezone ++;
+//        }
+//        else{
+//          polezone --;
+//        }
+//        break;
+//
+//      case -1: //Falling Edge
+//        break;
+//
+//      default: //Unknown State
+//        break;
+//
+//    }
 }
 
 DS4_status_t old_data2;
@@ -698,24 +714,38 @@ unsigned int leftLoaderAlive = 0;
 void left_loader(bool start){
 
     if(start){
-      if (!leftLoaderAlive){
+      if (!leftLoaderAlive && !LSwitch){
         leftLoaderAlive=leftLoaderAliveDefalt;
       }
     }
     else if (leftLoaderAlive){
-        if(leftLoaderAlive == leftLoaderAliveDefalt) {
-            airSetState(&airBoard, 4, 0);//close upper valve
-            airSetState(&airBoard, 5, 1);//open lower valve
-        }
-        else if(leftLoaderAlive > 60) {
-            airSetState(&airBoard, 4, 0);
-            airSetState(&airBoard, 5, !((leftLoaderAlive/40)%2)); //close lower valve
-        }
-        else if(leftLoaderAlive >  0) {
-          airSetState(&airBoard, 4, !((leftLoaderAlive/40)%2));
-          airSetState(&airBoard, 5, 0);
-        }
-    leftLoaderAlive--;
+    	if(Ldisc == 0) {
+			if(leftLoaderAlive == leftLoaderAliveDefalt-10) {
+				airSetState(&airBoard, 4, 0);//close upper valve
+				airSetState(&airBoard, 5, 1);//open lower valve
+
+			}
+	//        else if(leftLoaderAlive > 60) {
+	//            airSetState(&airBoard, 4, 0);
+	//            airSetState(&airBoard, 5, !((leftLoaderAlive/40)%2)); //close lower valve
+	//            Ldisc = 1;
+	//        }
+	//        else if(leftLoaderAlive >  0) {
+	//          airSetState(&airBoard, 4, !((leftLoaderAlive/40)%2));
+	//          airSetState(&airBoard, 5, 0);
+	//        }
+			else if(leftLoaderAlive == 95) {
+				airSetState(&airBoard, 5, 0);
+			}
+			else if(leftLoaderAlive == 40) {
+				airSetState(&airBoard, 4, 1);
+				Ldisc = 1;
+			}
+		leftLoaderAlive--;
+		}
+    	else if(Ldisc == 1) {
+    		leftLoaderAlive--;
+    	}
     }
     else{
           airSetState(&airBoard, 4, 0);
@@ -728,24 +758,37 @@ unsigned int rightLoaderAlive = 0;
 
 void right_loader(bool start){
     if(start){
-      if(!rightLoaderAlive){
+      if(!rightLoaderAlive && !RSwitch){
         rightLoaderAlive=rightLoaderAliveDefalt;
       }
     }
     else if (rightLoaderAlive){
-        if(rightLoaderAlive == rightLoaderAliveDefalt) {
-            airSetState(&airBoard, 2, 0);   //close upper valve
-            airSetState(&airBoard, 3, 1);   //open lower valve
-        }
-        else if(rightLoaderAlive > 60) {
-            airSetState(&airBoard, 2, 0);
-            airSetState(&airBoard, 3, !((rightLoaderAlive/40)%2)); //close lower valve
-        }
-        else if(rightLoaderAlive > 0) {
-          airSetState(&airBoard, 2, !((rightLoaderAlive/40)%2));
-          airSetState(&airBoard, 3, 0);
-        }
-    rightLoaderAlive--;
+    	if(Rdisc == 0) {
+			if(rightLoaderAlive == rightLoaderAliveDefalt-10) {
+				airSetState(&airBoard, 2, 0);   //close upper valve
+				airSetState(&airBoard, 3, 1);   //open lower valve
+			}
+	//        else if(rightLoaderAlive > 60) {
+	//            airSetState(&airBoard, 2, 0);
+	//            airSetState(&airBoard, 3, !((rightLoaderAlive/40)%2)); //close lower valve
+	//            Rdisc = 1;
+	//        }
+	//        else if(rightLoaderAlive > 0) {
+	//          airSetState(&airBoard, 2, !((rightLoaderAlive/40)%2));
+	//          airSetState(&airBoard, 3, 0);
+	//        }
+			else if(rightLoaderAlive == 95) {
+				airSetState(&airBoard, 3, 0);
+			}
+			else if (rightLoaderAlive == 40) {
+				airSetState(&airBoard, 2, 1);
+				Rdisc = 1;
+			}
+		rightLoaderAlive--;
+    	}
+    	else if(Rdisc == 1) {
+    		rightLoaderAlive--;
+    	}
     }
     else{
       airSetState(&airBoard, 2, 0);
@@ -764,7 +807,9 @@ void pusher(bool start){
   else if(pusherAlive){
     if(pusherAlive == pusherAliveDefault){   //Select Disc and push to centre
         airSetState(&airBoard, 6, 0); //Retrieve right disc to middle
+        A6on = 0;
         airSetState(&airBoard, 7, 0);
+        A7on = 0;
         if (CSwitch||PS4_ButtonPress(TRIANGLE)){
           pusherAlive--;
         }
@@ -774,32 +819,43 @@ void pusher(bool start){
           if ((!rightLoaderAlive && leftLoaderAlive)||
               (!rightLoaderAlive && !leftLoaderAlive && lastDiscIsLeft)){
               airSetState(&airBoard, 6, 1); //Push right disc to middle
+              Rdisc = 0;
+              A6on = 1;
           }
           else if ((!leftLoaderAlive && rightLoaderAlive)||
               (!rightLoaderAlive && !leftLoaderAlive && !lastDiscIsLeft)){
               airSetState(&airBoard, 7, 1); //Push left disc to middle
+              A7on = 1;
+              Ldisc = 0;
           }
         }
         if(pusherAlive == pusherAliveDefault-55){ // Retrieve piston and check if centre have disc
             if (!LSwitch && !RSwitch && !(DS4.triangle)){
                 airSetState(&airBoard, 6, 0); //Retrieve right disc piston
+                A6on = 0;
                 airSetState(&airBoard, 7, 0); //Retrieve left disc piston
+                A7on = 0;
                 pusherAlive=pusherAliveDefault+50;
             }
             else{
               airSetState(&airBoard, 6, 0); //Retrieve right disc piston
               airSetState(&airBoard, 7, 0); //Retrieve left disc to piston
+              Cdisc = 1;
+//              if(LSwitch)
+            	  A7on = 0;
+//              if(RSwitch)
+            	  A6on = 0;
             }
         }
         if(pusherAlive == 1){ //Raise Hoist & Load Other Disc
           switch(LMR){
             case -1:
               left_loader(true);
-              lastDiscIsLeft=true;
+              lastDiscIsLeft=false;
               break;
             case 1:
               right_loader(true);
-              lastDiscIsLeft=false;
+              lastDiscIsLeft=true;
               break;
             default:
                 if(lastDiscIsLeft){
@@ -828,7 +884,9 @@ void pusher(bool start){
   }
   else{
       airSetState(&airBoard, 6, 0); //Retrieve right disc to middle
+      A6on = 0;
       airSetState(&airBoard, 7, 0);
+      A7on = 0;
   }
 }
 
@@ -848,15 +906,20 @@ void shooter(bool start){
         Servo1.command[0] = ROLL_DEFAULT;
         Servo1.command[1] = PITCH_MIN;
         Servo1.command[2] = RAMMER_MIN;
-        airSetState(&airBoard, 8, 1);
+        if(!LSwitch && !RSwitch) {
+        	airSetState(&airBoard, 8, 1);
+        }
+        else {
+        	shooterAlive++;
+        }
         currentCount = 0;
       }
-      if (shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-40){ // Central Platform follow Pitch and Roll
+      if (shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-50){ // Central Platform follow Pitch and Roll
             int servoRoll = constrain(ROLL_DEFAULT + getRoll()*SERVO_STEP_ROLL, ROLL_MAX, ROLL_MIN);
             if (servoRoll > Servo1.command[0]) Servo1.command[0]+= (servoRoll > Servo1.command[0] + 20)?2:1;
             else if (servoRoll < Servo1.command[0]) Servo1.command[0]-= (servoRoll < Servo1.command[0] - 20)?2:1;
       }
-      if(shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-40){
+      if(shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-50){
             int servoPitch = constrain(PITCH_MIN + getPitch()*SERVO_STEP_PITCH, PITCH_MAX, PITCH_MIN);
             if (servoPitch > Servo1.command[1] )Servo1.command[1]+=(servoPitch > Servo1.command[1] + 10)?6:2;
             else if (servoPitch < Servo1.command[1] )Servo1.command[1]-=(servoPitch < Servo1.command[1] - 20)?2:1;
@@ -898,8 +961,13 @@ void shooter(bool start){
       if(shooterAlive == shooterAliveDefault-170){
         Servo1.command[1] = PITCH_MIN;
       }
-      if (currentCount>100){
+      if(!((airBoard.state)&(1<<8))&&CSwitch){
+        Servo1.command[0] = ROLL_DEFAULT;
+        Servo1.command[1] = PITCH_MIN;
+      }
+      if (currentCount>90){
         pusher(true);
+        Cdisc = 0;
       }
       if(shooterAlive == 1 && currentCount < 100){
         Servo1.command[2] = RAMMER_MIN;
@@ -956,6 +1024,7 @@ void reload_and_shoot(void) {
       pusher(false);
       left_loader(false);
       right_loader(false);
+      reloadInit = 1;	//make sure the robot will load 2 ari disc after entering loading zone for a 2nd time
 
 }
 
@@ -1019,8 +1088,12 @@ void runManual(void) {
     M[3].SetPoint = pitchAngle - rollAngle;
 */
 
-    int moveRoll = AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), HatDeadzone);
-    int movePitch = AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), HatDeadzone);
+    int moveRoll = 0;
+    moveRoll += AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), HatDeadzone)/20;
+    moveRoll += AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), 70)*20;
+    int movePitch = 0;
+    movePitch += AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), HatDeadzone);
+    movePitch += AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), 60)*5;
 
     if (!moveRoll && !movePitch){
       M[2].SetPoint=0;
@@ -1034,8 +1107,8 @@ void runManual(void) {
       }
       else{
         accuprchange += moveRoll;
-        setPitchRoll(lastpr,getRoll()+accuprchange/20);
-        if(accuprchange/10){
+        setPitchRoll(lastpr,getRoll()+accuprchange/70);
+        if(accuprchange/70){
           accuprchange=0;
         }
       }
@@ -1048,8 +1121,8 @@ void runManual(void) {
       }
       else{
         accuprchange += movePitch;
-        setPitchRoll(getPitch()+accuprchange/20,lastpr);
-        if(accuprchange/10){
+        setPitchRoll(getPitch()+accuprchange/30,lastpr);
+        if(accuprchange/30){
           accuprchange=0;
         }
       }
@@ -1104,32 +1177,41 @@ void runManual(void) {
 }
 
 void runAuto(PositionStates *set, int pos) {
-  if (pos == 0 || pos == 8){
-    airSetState(&airBoard, 3, 0);
-    airSetState(&airBoard, 5, 0);
-    airSetState(&airBoard, 6, 0);
-    airSetState(&airBoard, 7, 0);
-    airSetState(&airBoard, 8, 0);
-    Servo1.command[0] = (ROLL_MIN+ROLL_MAX)/2;
-    Servo1.command[1] = PITCH_MIN;
-    Servo1.command[2] = RAMMER_MIN;
-    shooterAlive=0;
-    pusherAlive = 0;
-    airSetState(&airBoard, 2, 1);
-    airSetState(&airBoard, 4, 1);
-    setPitchRoll(set[pos].pitch, set[pos].roll);
-    XPID(distanceSum, set[pos].x);
-    YPID((int)yDistance, set[pos].y);
-    left_loader(true);
-    right_loader(true);
-    pusher(true);
+  if (pos == 0 || pos == 8) {
+		airSetState(&airBoard, 3, 0);
+		airSetState(&airBoard, 5, 0);
+		airSetState(&airBoard, 6, 0);
+		airSetState(&airBoard, 7, 0);
+		airSetState(&airBoard, 8, 0);
+		Servo1.command[0] = ROLL_DEFAULT;
+		Servo1.command[1] = PITCH_MIN;
+		Servo1.command[2] = RAMMER_MIN;
+		shooterAlive = 0;
+		pusherAlive = 0;
+		leftLoaderAlive = 0;
+		rightLoaderAlive = 0;
+		if(reloadInit == 1 && pos == 8) {
+			Ldisc = 1;
+			Rdisc = 1;
+		}
+		if(reloadInit == 0 && pos == 8) {
+			Ldisc = 0;
+			Rdisc = 0;
+		}
+
+		airSetState(&airBoard, 2, 1);
+		airSetState(&airBoard, 4, 1);
+		setPitchRoll(set[pos].pitch, set[pos].roll);
+		XPID(distanceSum, set[pos].x);
+		YPID((int)yDistance, set[pos].y);
+		left_loader(true);
+		right_loader(true);
+		pusher(true);
   }
   else{
       YPID((int)yDistance, set[pos].y);
       XPID(distanceSum, set[pos].x);
-      if(!setPitchRoll(set[pos].pitch, set[pos].roll) && !AddDeadZone(distanceSum-set[pos].x, 10)){
-          reload_and_shoot();
-      }
+      setPitchRoll(set[pos].pitch, set[pos].roll);
   }
   M[4].SetPoint = set[pos].shootspd;
   M[5].SetPoint = set[pos].shootspd;
@@ -1163,15 +1245,4 @@ void castLimit(void){
     M[6].SetPoint = 0;
   }
 }
-
-//relocate is a term used when repositioning artilleries
-void relocate(void) {
-
-}
-
-void runMode(PositionStates *set, int pos){
-
-}
-
-
 
