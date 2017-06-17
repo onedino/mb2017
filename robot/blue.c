@@ -30,6 +30,7 @@
 /*
  * common for both manual and auto
  */
+
 void updateOldPS4Data (void) {
     savePS4Data();
 	old_cross_state = DS4.cross;
@@ -44,34 +45,38 @@ void updateOldPS4Data (void) {
 
 
 
-void displayDebug (void) {
-	debug_display[0] = LineSensor2016[0].status;//M[0].Board.ADCValue;
-	debug_display[1] = LineSensor2016[0].position;//M[1].Board.ADCValue;
-	debug_display[2] = LineSensor2016[0].position - 1911;
-	debug_display[3] = M[3].Board.ADCValue;
-	debug_display[4] = M[6].Board.ADCValue;//M[4].Feedback;	//left to mid
-	debug_display[5] = DS4.tpad_click;//M[5].Feedback;	//right to mid
-    debug_display[6] = DS4.tpad_info[0].finger[0].x;
-	debug_display[7] = DS4.tpad_info[0].finger[0].y;
-    debug_display[8] = DS4.tpad_info[0].finger[0].not_touching;
-    debug_display[9] = targetPosition;
-}
+
 
 PositionStates blueStateSet[10]={
 // {id      ,x      ,y      ,pitch  ,roll   ,shootspd   },
 //   {        ,       ,       ,       ,       ,           },
 
    {0       , 500    ,0      ,0      ,0      ,0          }, //Start Zone
-   {1       , -883   ,336    ,138    ,-80    ,905        },
-   {2       , -1864  ,250    ,228    ,128    ,1050       },
-   {3       , -4600  ,250    ,240    ,0      ,710        }, //Middle Near
-   {4       , -4454  ,398    ,191    ,220    ,1105       }, //Middle Middle
-   {5       , -2830  ,3453   ,184    ,183    ,1390       }, //Middle Far
-   {6       , -5730  ,350    ,212    ,132    ,1040       },
-   {7       , -7767  ,320    ,189    ,75     ,990        },
-   {8       , -12500 ,0      ,108    ,5      ,0          },  //Loading Zone
-   {9		, -5154	 ,0		 ,1		 ,-2	 ,1700		 }
+   {1       , -883   ,336    ,130    ,-93    ,905        },
+   {2       , -1864  ,250    ,235    ,85    ,1050       },
+   {3       , -4600  ,250    ,238    ,-24      ,710        }, //Middle Near
+   {4       , -4454  ,398    ,202    ,193    ,1105       }, //Middle Middle
+   {5       , -2830  ,353    ,196    ,154     ,1390       }, //Middle Far
+   {6       , -5730  ,350    ,215    ,91    ,1040       },
+   {7       , -7767  ,320    ,190    ,33     ,990        },
+   {8       , -12475 ,0      ,108    ,5      ,0          },  //Loading Zone
+   {9		, -6000	 ,0		 ,1		 ,-2	 ,1800		 }
 };
+
+
+void displayDebug (void) {
+	debug_display[0] = blueStateSet[targetPosition].pitch;//M[0].Board.ADCValue;
+	debug_display[1] = blueStateSet[targetPosition].roll;//M[1].Board.ADCValue;
+	debug_display[2] = blueStateSet[targetPosition].x;
+//	debug_display[3] = M[3].Board.ADCValue;
+//	debug_display[4] = M[6].Board.ADCValue;//M[4].Feedback;	//left to mid
+//	debug_display[5] = DS4.tpad_click;//M[5].Feedback;	//right to mid
+//    debug_display[6] = 0;
+//	debug_display[7] = DS4.tpad_info[0].finger[0].y;
+//    debug_display[8] = DS4.tpad_info[0].finger[0].not_touching;
+//    debug_display[9] = targetPosition;
+}
+
 bool init = false;
 void RunPath (void) {
 	UpdatePosition();
@@ -115,15 +120,31 @@ void RunPath (void) {
           leftDisc=false;
           rightDisc=false;
           runAuto(blueStateSet, targetPosition);
-
+          defenseState = 0;
         }
         else if(DS4.r2_trigger>200) {
           targetPosition = 8;
           runAuto(blueStateSet, targetPosition);
+          defenseState = 0;
         }
         else if(DS4.l1) {
 	      runAuto(blueStateSet, targetPosition);
 	    }
+	    if (PS4_ButtonPress(OPTIONS)){
+	      encoder_resetcount(0);
+	      encoder_resetcount(1);
+	    }
+//        else if(PS4_ButtonPress(OPTIONS)) {
+//        	if(defenseStxate == 0) {
+//				prevPosition = targetPosition;
+//				targetPosition = 9;
+//				defenseState = 1;
+//        	}
+//        	else if(defenseState == 1) {
+//        		targetPosition = prevPosition;
+//        		defenseState = 0;
+//        	}
+//        }
 	    else{
 	         //Manual Mode
 	        //updateData ();
@@ -131,24 +152,37 @@ void RunPath (void) {
 	        //checkForAuto ();
 	    }
 
-	    if(PS4_ButtonPress(SQUARE)) {
-	      blueStateSet[targetPosition].pitch = getPitch();
-	      blueStateSet[targetPosition].roll = getRoll();
-	      blueStateSet[targetPosition].x = distanceSum;
-	      blueStateSet[targetPosition].y = yDistance;
-	      blueStateSet[targetPosition].shootspd = (M[4].SetPoint+M[5].SetPoint)/2;
-	    }
+	    if(PS4_ButtonPress(R1)){
+	        if(PS4_ButtonPress(SQUARE)) {
+	             EEPread(blueStateSet, targetPosition);
+	        }
+	     }
+	     else if(PS4_ButtonPress(SQUARE)) {
+	    	     blueStateSet[targetPosition].pitch = getPitch();
+	    	     blueStateSet[targetPosition].roll = getRoll();
+	    	     blueStateSet[targetPosition].x = distanceSum;
+	    	     blueStateSet[targetPosition].y = yDistance;
+	    	     blueStateSet[targetPosition].shootspd = (M[4].SetPoint+M[5].SetPoint)/2;
+
+	    	     EEPwrite(blueStateSet, targetPosition);
+	     }
 	//Update position according to pole aiming
 	    if(PS4_ButtonPress(RIGHT) && !DS4.r1) {
 	      //Shift the pole aiming at
 	        //For Wizley
-	       targetPosition = constrain(++targetPosition, 9, 0);
+	       targetPosition = constrain(++targetPosition, 8, 0);
+			if(targetPosition != 9) {
+				defenseState = 0;
+			}
 	    }
 
 	    if(PS4_ButtonPress(LEFT) && !DS4.r1) {
 	        //Shift the pole aiming at
 	        //For Wizley
-	        targetPosition = constrain(--targetPosition, 9, 0);
+	        targetPosition = constrain(--targetPosition, 8, 0);
+	        if(targetPosition != 9) {
+	        	defenseState = 0;
+	        }
 	    }
 
 //	    if(DS4.tpad_click){

@@ -163,7 +163,7 @@ int main(void) {
   DS4_Start();
 
 
-  chThdSleepMilliseconds(1000);
+  chThdSleepMilliseconds(4000);
   /*
    * Creating the blinker threads.
    */

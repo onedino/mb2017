@@ -27,6 +27,7 @@
 #include "linesensor.h"
 #endif
 #include <string.h>
+#include "common.h"
 
 static font_t font1;
 static GHandle statusbar;

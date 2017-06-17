@@ -12,6 +12,11 @@
 #define ID_ENCODER3_4 5
 
 typedef struct{
+	uint32_t count[2];
+}__attribute__((packed)) ENCPck_t;
+
+typedef struct{
+  ENCPck_t packet;
   uint16_t count_per_revolution[2];
   uint16_t count[2];
   uint16_t delta_count[2];
@@ -22,4 +27,5 @@ extern ENCObj_t encoder1_2;
 extern ENCObj_t encoder3_4;
 void encoder_setAlive(volatile void * arg);
 void encoder_decAlive(volatile void * arg);
+udc_rx_state_e encoder_resetcount(int encoder_no);
 #endif /* ROBOT_ENCODER_ENCODER_H_ */

@@ -18,6 +18,9 @@
 #include "analog.h"
 #include "airboard.h"
 #include "distancesensor.h"
+#include "drivers.h"
+#include "menu_struct.h"
+#include "app_list.h"
 
 const int reloadPos = 7;
 const int numberOfStage = 8;
@@ -54,6 +57,8 @@ int A6on = 0;
 int A7on = 0;
 int reloadInit = 0;
 
+int prevPosition = 0;
+int defenseState = 0;
 //===============================================
 //Wizley Defined Variables
 int targetPosition=0;
@@ -201,35 +206,55 @@ long long encoderSum = 0;
 bool encoderLeftError = false;
 bool encoderRightError = false;
 void UpdatePosition(void) {
-    update_shooter_flags();
-    //common code for motor, encoder and line sensor
-    if(encoder1_2.Alive == 0) {
-      encoder1_2.delta_count[0] = 0;
-      encoder1_2.delta_count[1] = 0;
-    }
-    else{
-      LencoderSum += (int16_t)encoder1_2.delta_count[0];
-      RencoderSum += (int16_t)encoder1_2.delta_count[1];
-    }
-    if (abs(LencoderSum) > abs(RencoderSum) + 4500){
-      encoderSum = 2 * LencoderSum;
-      RencoderSum = 0;
-    }
-    else if (abs(RencoderSum) > abs(LencoderSum) + 4500) {
-      encoderSum = 2 * RencoderSum;
-      LencoderSum = 0;
-    }
-    else{
-      encoderSum = LencoderSum+RencoderSum;
-    }//667170
-    lDistanceSum =((float) LencoderSum * 13000.0 / 333585) + xDistanceOffset;//354708
-    rDistanceSum =((float) RencoderSum * 13000.0 / 333585) + xDistanceOffset;//357559
+	    update_shooter_flags();
+	    //common code for motor, encoder and line sensor
+	    int32_t tempL = (int32_t)encoder1_2.packet.count[0];
+	    int32_t tempR = (int32_t)encoder1_2.packet.count[1];
+	    if(encoder1_2.Alive <2) {
+//	      encoder1_2.packet.count[0] = 0;
+//	      encoder1_2.packet.count[1] = 0;
+//	      tempL=0;
+//	      tempR=0;
+	    }
+	    else{
+	      LencoderSum = tempL;
+	      RencoderSum = tempR;
+	    }
+
+	//    if(abs(LencoderSum)>abs(RencoderSum) + 4000){
+	//      encoderSum = LencoderSum+LencoderSum;
+	//    }
+	//    else if(abs(RencoderSum)>abs(LencoderSum) + 4000){
+	//      encoderSum = RencoderSum+RencoderSum;
+	//    }
+	//    else{
+	//      encoderSum = LencoderSum+RencoderSum;
+	//    }
+
+	     // encoderSum=LencoderSum+RencoderSum;
+
+	    if(abs(tempL)>abs(tempR)){
+	      encoderSum=2*tempL;
+	    }
+	    else if(abs(tempR)>abs(tempL)){
+	      encoderSum=2*tempR;
+	    }
+	    else{
+	      encoderSum=tempL+tempR;
+	    }
+
+	    //TODO: tune the proportionality constant
+    lDistanceSum =((float) LencoderSum * 13000.0 / 355603) + xDistanceOffset;
+    rDistanceSum =((float) RencoderSum * 13000.0 / 335289) + xDistanceOffset;
+    distanceSum = ((float) encoderSum * 13000.0 / (669352)) + xDistanceOffset;//Measured from testrun red field 667170erSum * 13000.0 / 333585) + xDistanceOffset;//357559
 
 
 
     yDistance = (long long)(M[6].Board.EncoderCount-yEncoderOffset) *500 / 395473;
 
-    debug_display[7] = lDistanceSum;
+    debug_display[5] = M[3].Board.ADCValue;
+    debug_display[6] = M[2].Board.ADCValue;
+	debug_display[7] = lDistanceSum;
     debug_display[8] = rDistanceSum;
 //
 //    int LSpos = 1911 - LineSensor2016[0].position; //line at right = -ve, line at left = +ve;
@@ -709,7 +734,7 @@ int LMR = 0;
 bool shooterError = false;
 
 
-const unsigned int leftLoaderAliveDefalt = 140;
+const unsigned int leftLoaderAliveDefalt = 120;
 unsigned int leftLoaderAlive = 0;
 void left_loader(bool start){
 
@@ -734,10 +759,10 @@ void left_loader(bool start){
 	//          airSetState(&airBoard, 4, !((leftLoaderAlive/40)%2));
 	//          airSetState(&airBoard, 5, 0);
 	//        }
-			else if(leftLoaderAlive == 95) {
+			else if(leftLoaderAlive == 70) {
 				airSetState(&airBoard, 5, 0);
 			}
-			else if(leftLoaderAlive == 40) {
+			else if(leftLoaderAlive == 30) {
 				airSetState(&airBoard, 4, 1);
 				Ldisc = 1;
 			}
@@ -753,7 +778,7 @@ void left_loader(bool start){
     }
 }
 
-const unsigned int rightLoaderAliveDefalt = 140;
+const unsigned int rightLoaderAliveDefalt = 120;
 unsigned int rightLoaderAlive = 0;
 
 void right_loader(bool start){
@@ -777,10 +802,10 @@ void right_loader(bool start){
 	//          airSetState(&airBoard, 2, !((rightLoaderAlive/40)%2));
 	//          airSetState(&airBoard, 3, 0);
 	//        }
-			else if(rightLoaderAlive == 95) {
+			else if(rightLoaderAlive == 70) {
 				airSetState(&airBoard, 3, 0);
 			}
-			else if (rightLoaderAlive == 40) {
+			else if (rightLoaderAlive == 30) {
 				airSetState(&airBoard, 2, 1);
 				Rdisc = 1;
 			}
@@ -1198,7 +1223,6 @@ void runAuto(PositionStates *set, int pos) {
 			Ldisc = 0;
 			Rdisc = 0;
 		}
-
 		airSetState(&airBoard, 2, 1);
 		airSetState(&airBoard, 4, 1);
 		setPitchRoll(set[pos].pitch, set[pos].roll);
@@ -1220,9 +1244,9 @@ void runAuto(PositionStates *set, int pos) {
 
 void castLimit(void){
   //XMovement Speed
-  M[0].SetPoint = accelerationLimit(M[0].SetPoint, xOldMotorSpeed, acceleration_limit, 3*acceleration_limit);
+  M[0].SetPoint = accelerationLimit(M[0].SetPoint, xOldMotorSpeed, acceleration_limit,2* acceleration_limit);
   M[0].SetPoint = constrain(M[0].SetPoint, upLimit, lowLimit);
-  M[1].SetPoint = accelerationLimit(M[1].SetPoint, xOldMotorSpeed, acceleration_limit, 3*acceleration_limit);
+  M[1].SetPoint = accelerationLimit(M[1].SetPoint, xOldMotorSpeed, acceleration_limit,2* acceleration_limit);
   M[1].SetPoint = constrain(M[1].SetPoint, upLimit, lowLimit);
   xOldMotorSpeed = (M[0].SetPoint+M[1].SetPoint)/2;
   //Shooter Speed-
@@ -1245,4 +1269,211 @@ void castLimit(void){
     M[6].SetPoint = 0;
   }
 }
+
+//void EEPwrite(PositionStates *set, int pos){
+//    uint16_t flattened[5]= {};
+//    flattened[0] = ((set[pos].pitch));
+//    flattened[1] = ((set[pos].roll));
+//    flattened[2] = ((set[pos].shootspd));
+//    flattened[3] = ((set[pos].x));
+//    flattened[4] = ((set[pos].y));
+//
+////      flattened[0] = ((90));
+////      flattened[1] = ((555));
+////      flattened[2] = ((314));
+////      flattened[3] = ((110));
+////      flattened[4] = ((122));
+//
+//    static uint8_t buf[10] = {0};
+//
+//    static I2CEepromFileConfig  eepcfg =
+//    {
+//     0,
+//     _24LC02_SIZE_,
+//     _24LC02_SIZE_,
+//     _24LC024H_PAGESIZE_,
+//     MS2ST(5),
+//     &I2CD1,
+//     0b1010000,
+//     buf
+//   };
+//
+//    I2CEepromFileStream file;
+//    I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+//
+//    if (current_running_menu->data.app == &red){
+//  //    eepcfg.barrier_low = 50;
+//  //    eepcfg.barrier_hi = 149;
+//      eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+//
+//    }else if (current_running_menu->data.app == &blue){
+//  //   eepcfg.barrier_low = 150;
+// //    eepcfg.barrier_hi = 249;
+//      eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+//    }
+//
+//    for(int i = 0; i < 5; i++){
+//      if (EepromWriteHalfword((EepromFileStream *)&file, flattened[i]) != 2){
+//        return;
+//      }
+//      chThdSleepMilliseconds(50);
+//    }
+//
+//    eepfs_close((EepromFileStream *)&file);
+//
+//    return;
+//}
+//
+//
+//void EEPread(PositionStates *set, int pos){
+//  uint16_t flattened[10]= {};
+//
+//  static uint8_t buf[10] = {0};
+//
+//  static I2CEepromFileConfig  eepcfg =
+//  {
+//   0,
+//   _24LC02_SIZE_,
+//   _24LC02_SIZE_,
+//   _24LC024H_PAGESIZE_,
+//   MS2ST(5),
+//   &I2CD1,
+//   0b1010000,
+//   buf
+// };
+//
+//  I2CEepromFileStream file;
+//  I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+//
+//  if (current_running_menu->data.app == &red){
+////    eepcfg.barrier_low = 50;
+////    eepcfg.barrier_hi = 149;
+//    eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+//
+//  }else if (current_running_menu->data.app == &blue){
+////   eepcfg.barrier_low = 150;
+////    eepcfg.barrier_hi = 249;
+//    eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+//  }
+//
+////    chThdSleepMilliseconds(100);
+//
+//  for(int i = 0; i < 5; i++){
+//    flattened[i] = EepromReadHalfword((EepromFileStream *) &file);
+//  }
+//
+//  set[pos].pitch = ((int16_t)(flattened[0]));
+//  set[pos].roll = ((int16_t)(flattened[1]));
+//  set[pos].shootspd = ((int16_t)(flattened[2]));
+//  set[pos].x = ((int16_t)(flattened[3]));
+//  set[pos].y = ((int16_t)(flattened[4]));
+//
+//  eepfs_close((EepromFileStream *)&file);
+//
+//
+//}
+
+void EEPwrite(PositionStates *set, int pos){
+    uint16_t flattened[5]= {};
+    flattened[0] = ((set[pos].pitch));
+    flattened[1] = ((set[pos].roll));
+    flattened[2] = ((set[pos].shootspd));
+    flattened[3] = ((set[pos].x));
+    flattened[4] = ((set[pos].y));
+
+//      flattened[0] = ((90));
+//      flattened[1] = ((555));
+//      flattened[2] = ((314));
+//      flattened[3] = ((110));
+//      flattened[4] = ((122));
+
+    static uint8_t buf[10] = {0};
+
+    static I2CEepromFileConfig  eepcfg =
+    {
+     0,
+     _24LC02_SIZE_,
+     _24LC02_SIZE_,
+     _24LC024H_PAGESIZE_,
+     MS2ST(5),
+     &I2CD1,
+     0b1010000,
+     buf
+   };
+
+    I2CEepromFileStream file;
+    I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+
+    if (current_running_menu->data.app == &red){
+  //    eepcfg.barrier_low = 50;
+  //    eepcfg.barrier_hi = 149;
+      eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+
+    }else if (current_running_menu->data.app == &blue){
+  //   eepcfg.barrier_low = 150;
+ //    eepcfg.barrier_hi = 249;
+      eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+    }
+
+    for(int i = 0; i < 5; i++){
+      if (EepromWriteHalfword((EepromFileStream *)&file, flattened[i]) != 2){
+        return;
+      }
+      chThdSleepMilliseconds(50);
+    }
+
+    eepfs_close((EepromFileStream *)&file);
+
+    return;
+}
+
+
+void EEPread(PositionStates *set, int pos){
+  uint16_t flattened[10]= {};
+
+  static uint8_t buf[10] = {0};
+
+  static I2CEepromFileConfig  eepcfg =
+  {
+   0,
+   _24LC02_SIZE_,
+   _24LC02_SIZE_,
+   _24LC024H_PAGESIZE_,
+   MS2ST(5),
+   &I2CD1,
+   0b1010000,
+   buf
+ };
+
+  I2CEepromFileStream file;
+  I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+
+  if (current_running_menu->data.app == &red){
+//    eepcfg.barrier_low = 50;
+//    eepcfg.barrier_hi = 149;
+    eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+
+  }else if (current_running_menu->data.app == &blue){
+//   eepcfg.barrier_low = 150;
+//    eepcfg.barrier_hi = 249;
+    eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+  }
+
+//    chThdSleepMilliseconds(100);
+
+  for(int i = 0; i < 5; i++){
+    flattened[i] = EepromReadHalfword((EepromFileStream *) &file);
+  }
+
+  set[pos].pitch = ((int16_t)(flattened[0]));
+  set[pos].roll = ((int16_t)(flattened[1]));
+  set[pos].shootspd = ((int16_t)(flattened[2]));
+  set[pos].x = ((int16_t)(flattened[3]));
+  set[pos].y = ((int16_t)(flattened[4]));
+
+  eepfs_close((EepromFileStream *)&file);
+
+
+}
+
 

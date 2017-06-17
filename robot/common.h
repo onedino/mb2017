@@ -200,7 +200,13 @@ extern int Cdisc;
 extern int A6on;
 extern int A7on;
 
+extern int prevPosition;
+extern int defenseState;
+
 extern unsigned int rightLoaderAlive;
+
+void EEPwrite(PositionStates *set, int pos);
+void EEPread(PositionStates *set, int pos);
 
 #endif /* COMMON_H_ */
 //rip
