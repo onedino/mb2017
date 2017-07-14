@@ -18,6 +18,9 @@
 #include "analog.h"
 #include "airboard.h"
 #include "distancesensor.h"
+#include "drivers.h"
+#include "menu_struct.h"
+#include "app_list.h"
 
 const int reloadPos = 7;
 const int numberOfStage = 8;
@@ -36,7 +39,7 @@ int debug_display[10]={};
 const int HatDeadzone = 10;
 const int upLimit = 5300;// in terms of SetPoint (Motor Board Max Limit 53XX)
 const int lowLimit = -5300;
-const int acceleration_limit = 70;//60;
+const int acceleration_limit = 60;//60 in hku 190 in hkstp, remember to check deaccel too;
 
 //for ps4 button debounce
 int old_r1_state,old_l1_state,old_dpad_state;
@@ -46,6 +49,16 @@ int circleAlive = 0;
 int dpadUPAlive = 0;
 int dpadDOWNAlive = 0;
 
+int Rdisc = 0;
+int Ldisc = 0;
+int Cdisc = 0;
+
+int A6on = 0;
+int A7on = 0;
+int reloadInit = 0;
+
+int prevPosition = 0;
+int defenseState = 0;
 //===============================================
 //Wizley Defined Variables
 int targetPosition=0;
@@ -142,40 +155,40 @@ bool LSOnline_prev = false;
 int LSCounter = 0;
 int LSState = 0;
 void Linesensor(void){
-  int returnval=0;
-  if (LineSensor2016[0].status == 1 && LSOnline_prev){
-    if(LSCounter > 0){
-      LSCounter--;
-    }
-    else if (LSCounter == 0){
-      LSCounter--;
-      returnval= 1;
-    }
-    else if (LSCounter == -1){
-      returnval= 2;
-    }
-  }
-  else if (LineSensor2016[0].status != 1 && !LSOnline_prev){
-    if(LSCounter > 0){
-      LSCounter--;
-    }
-    else if (LSCounter == 0){
-      LSCounter--;
-      returnval= -1;
-    }
-    else if (LSCounter == -1){
-      returnval= -2;
-    }
-  }
-  else if (LineSensor2016[0].status == 1 && !LSOnline_prev){
-    LSCounter = 10;
-  }
-  else if (LineSensor2016[0].status != 1 && LSOnline_prev){
-    LSCounter = 10;
-  }
-
-  LSOnline_prev = (LineSensor2016[0].status == 1);
-  LSState = returnval;
+//  int returnval=0;
+//  if (LineSensor2016[0].status == 1 && LSOnline_prev){
+//    if(LSCounter > 0){
+//      LSCounter--;
+//    }
+//    else if (LSCounter == 0){
+//      LSCounter--;
+//      returnval= 1;
+//    }
+//    else if (LSCounter == -1){
+//      returnval= 2;
+//    }
+//  }
+//  else if (LineSensor2016[0].status != 1 && !LSOnline_prev){
+//    if(LSCounter > 0){
+//      LSCounter--;
+//    }
+//    else if (LSCounter == 0){
+//      LSCounter--;
+//      returnval= -1;
+//    }
+//    else if (LSCounter == -1){
+//      returnval= -2;
+//    }
+//  }
+//  else if (LineSensor2016[0].status == 1 && !LSOnline_prev){
+//    LSCounter = 10;
+//  }
+//  else if (LineSensor2016[0].status != 1 && LSOnline_prev){
+//    LSCounter = 10;
+//  }
+//
+//  LSOnline_prev = (LineSensor2016[0].status == 1);
+//  LSState = returnval;
 }
 
 //encoder usage
@@ -185,63 +198,90 @@ long long LencoderSum = 0;
 long long RencoderSum = 0;
 long yEncoderOffset=0;
 int32_t distance_1, distance_2;
-int distanceSum;
+int distanceSum = 0, lDistanceSum =0, rDistanceSum = 0;
 float yDistance;
 float something;
 long xDistanceOffset = -500;//offset of the Origin to the Line
 long long encoderSum = 0;
+bool encoderLeftError = false;
+bool encoderRightError = false;
 void UpdatePosition(void) {
-    update_shooter_flags();
-    //common code for motor, encoder and line sensor
-    if(encoder1_2.Alive == 0) {
-      encoder1_2.delta_count[0] = 0;
-      encoder1_2.delta_count[1] = 0;
-    }
+	    update_shooter_flags();
+	    //common code for motor, encoder and line sensor
+	    int32_t tempL = (int32_t)encoder1_2.packet.count[0];
+	    int32_t tempR = (int32_t)encoder1_2.packet.count[1];
+	    if(encoder1_2.Alive <2) {
+//	      encoder1_2.packet.count[0] = 0;
+//	      encoder1_2.packet.count[1] = 0;
+//	      tempL=0;
+//	      tempR=0;
+	    }
+	    else{
+	      LencoderSum = tempL;
+	      RencoderSum = tempR;
+	    }
+
+	//    if(abs(LencoderSum)>abs(RencoderSum) + 4000){
+	//      encoderSum = LencoderSum+LencoderSum;
+	//    }
+	//    else if(abs(RencoderSum)>abs(LencoderSum) + 4000){
+	//      encoderSum = RencoderSum+RencoderSum;
+	//    }
+	//    else{
+	//      encoderSum = LencoderSum+RencoderSum;
+	//    }
+
+	     // encoderSum=LencoderSum+RencoderSum;
+
+	    if(abs(tempL)>abs(tempR)){
+	      encoderSum=2*tempL;
+	    }
+	    else if(abs(tempR)>abs(tempL)){
+	      encoderSum=2*tempR;
+	    }
+	    else{
+	      encoderSum=tempL+tempR;
+	    }
+
+	    //TODO: tune the proportionality constant
+    lDistanceSum =((float) LencoderSum * 13000.0 / 355603) + xDistanceOffset;
+    rDistanceSum =((float) RencoderSum * 13000.0 / 335289) + xDistanceOffset;
+//    distanceSum = ((float) encoderSum * 13000.0 / (669352)) + xDistanceOffset;//Measured from testrun red field 667170erSum * 13000.0 / 333585) + xDistanceOffset;//357559
 
 
-    LencoderSum += (int16_t)encoder1_2.delta_count[0];
-    RencoderSum += (int16_t)encoder1_2.delta_count[1];
 
-    if (LencoderSum > RencoderSum + 3500){
-      encoderSum = 2*LencoderSum;
-    }
-    else if (RencoderSum > LencoderSum + 3500){
-      encoderSum = 2* RencoderSum;
-    }
-    else{
-      encoderSum = LencoderSum+RencoderSum;
-    }
-    distanceSum = ((float) encoderSum * 12000 / 52058) + xDistanceOffset;//682160
     yDistance = (long long)(M[6].Board.EncoderCount-yEncoderOffset) *500 / 395473;
 
-    debug_display[7] = encoderSum/10000;
-    debug_display[8] = encoderSum%10000;
-
-    int LSpos = 1911 - LineSensor2016[0].position; //line at right = -ve, line at left = +ve;
-    Linesensor();
-    switch(LSState){
-      case 2: //Online
-        break;
-
-      case -2: //Offline
-        break;
-
-      case 1: //Rising Edge
-        if(LSpos>0){
-          polezone ++;
-        }
-        else{
-          polezone --;
-        }
-        break;
-
-      case -1: //Falling Edge
-        break;
-
-      default: //Unknown State
-        break;
-
-    }
+    debug_display[5] = M[3].Board.ADCValue;
+    debug_display[6] = M[2].Board.ADCValue;
+	debug_display[7] = lDistanceSum;
+    debug_display[8] = rDistanceSum;
+//
+//    int LSpos = 1911 - LineSensor2016[0].position; //line at right = -ve, line at left = +ve;
+//    Linesensor();
+//    switch(LSState){
+//      case 2: //Online
+//        break;
+//
+//      case -2: //Offline
+//        break;
+//
+//      case 1: //Rising Edge
+//        if(LSpos>0){
+//          polezone ++;
+//        }
+//        else{
+//          polezone --;
+//        }
+//        break;
+//
+//      case -1: //Falling Edge
+//        break;
+//
+//      default: //Unknown State
+//        break;
+//
+//    }
 }
 
 DS4_status_t old_data2;
@@ -340,10 +380,10 @@ bool XPID(int current, int target){
         max_speed = (int) constrain(max_speed, 32767,-32767);
       }
 
-      if (output>100)output = constrain(output,max_speed,100);
-      else if (output<-100)output = constrain(output,-100,-max_speed);
-      else if (output<0) output = ((curr_error/100)-1)*100;
-      else if (output>0) output =  ((curr_error/100)+1)*100;
+      if (output>50)output = constrain(output,max_speed,300);
+      else if (output<-50)output = constrain(output,-300,-max_speed);
+      else if (output<0) output = ((curr_error/10)-1)*100;
+      else if (output>0) output =  ((curr_error/10)+1)*100;
 
 //	  float P_p = (float)(curr_error) * 5.0;
 //	  i_term += (curr_error) * 0.5;
@@ -410,17 +450,29 @@ bool YPID(int32_t current, int target){
   return output==0;
 }
 
-
-
-/*
- * ADC30279 = 0.0deg
- * ADC35271 = 25.0deg
- *
- */
+//const int zeroPitch = 19382;//19642;
+//const int maxPitch = 24727;//26.0
+//const int minPitch = 18567;//-6.0
+//#define DELTA_PITCH (maxPitch - minPitch)
 
 int getPitch(void){
-  int servoPitch = ((uint16_t)(M[5].Board.ADCValue)-30196)*(281-7)/(35674-30302);//6625
-  return servoPitch;
+	int servoPitch = ((uint16_t)(M[5].Board.ADCValue)-ZERO_PITCH) / PITCH_RATIO;
+	return servoPitch;
+}
+
+/*
+ * Roll = 27601 when horizontal // 27599 machine 2
+ * Roll = 29630 when rolled to left by 20.0deg. // 20.1 = 31566
+ *
+ * Roll = 27599 0 degree for machine 2
+ * Roll = 31566 20.1 degree for machine 2
+ * 30475 15.0
+ */
+//const int maxRoll = 31566;
+int getRoll(void){
+	//	int servoRoll = ((uint16_t)(M[4].Board.ADCValue)-zeroRoll) *(0 - 201) * 1.05 /(maxRoll - zeroRoll);
+	int servoRoll = (ZERO_ROLL - (uint16_t)(M[4].Board.ADCValue)) / ROLL_RATIO;
+	return servoRoll;
 }
 
 bool setPitchRoll(int pitch, int roll){
@@ -439,35 +491,6 @@ bool setPitchRoll(int pitch, int roll){
         */
   return (AddDeadZone(pitchAngle+rollAngle, 80));
 }
-
-
-/*
- *ADC29894=0.0deg
- *ADC36492=30.0deg
- * Roll = 29630 when rolled to left by 20.0deg.
- */
-int getRoll(void){
-  int servoRoll = ((uint16_t)(M[4].Board.ADCValue)-(int)30068)*(363 - (-337))/( 22677- 36930);//7730
-  return servoRoll;
-}
-
-//int setRoll(int value){
-//  //Move pitch roll
-//  int pitchAngle = -AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), HatDeadzone);
-//  int rollAngle = -AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), HatDeadzone);
-//  pitchAngle= (float)2000*abs(pitchAngle)*pitchAngle/13942.0;
-//  rollAngle = (float)2000*abs(rollAngle)*rollAngle/13942.0;
-//  M[2].SetPoint = constrain(pitchAngle + rollAngle, 32367, -32367);
-//  M[3].SetPoint = constrain(pitchAngle - rollAngle, 32367, -32367);
-//        /*servoRoll = constrain((int)servoRoll + ROLL_MIN, ROLL_MAX, ROLL_MIN);
-//        if (servoRoll > Servo1.command[0]) Servo1.command[0]+= (servoRoll > Servo1.command[0] + 20)?3:1;
-//        else if (servoRoll < Servo1.command[0]) Servo1.command[0]-= (servoRoll < Servo1.command[0] - 20)?2:1;*/
-//  return getRoll();
-//}
-
-
-
-
 
 /*
  * 2 : upper valve R	0 is extended
@@ -699,9 +722,6 @@ void lower_hoist(void) {
 	}
 }
 
-
-/////////////////////////////////////////////////////////////////////////
-
 /////////////////////////////////////////////////////////////////////////
 //////////////////////////////
 bool middleDisc = false;
@@ -714,29 +734,43 @@ int LMR = 0;
 bool shooterError = false;
 
 
-const unsigned int leftLoaderAliveDefalt = 140;
+const unsigned int leftLoaderAliveDefalt = 120;
 unsigned int leftLoaderAlive = 0;
 void left_loader(bool start){
 
     if(start){
-      if (!leftLoaderAlive){
+      if (!leftLoaderAlive && !LSwitch){
         leftLoaderAlive=leftLoaderAliveDefalt;
       }
     }
     else if (leftLoaderAlive){
-        if(leftLoaderAlive == leftLoaderAliveDefalt) {
-            airSetState(&airBoard, 4, 0);//close upper valve
-            airSetState(&airBoard, 5, 1);//open lower valve
-        }
-        else if(leftLoaderAlive > 60) {
-            airSetState(&airBoard, 4, 0);
-            airSetState(&airBoard, 5, !((leftLoaderAlive/20)%2)); //close lower valve
-        }
-        else if(leftLoaderAlive >  0) {
-          airSetState(&airBoard, 4, !((leftLoaderAlive/20)%2));
-          airSetState(&airBoard, 5, 0);
-        }
-    leftLoaderAlive--;
+    	if(Ldisc == 0) {
+			if(leftLoaderAlive == leftLoaderAliveDefalt-10) {
+				airSetState(&airBoard, 4, 0);//close upper valve
+				airSetState(&airBoard, 5, 1);//open lower valve
+
+			}
+	//        else if(leftLoaderAlive > 60) {
+	//            airSetState(&airBoard, 4, 0);
+	//            airSetState(&airBoard, 5, !((leftLoaderAlive/40)%2)); //close lower valve
+	//            Ldisc = 1;
+	//        }
+	//        else if(leftLoaderAlive >  0) {
+	//          airSetState(&airBoard, 4, !((leftLoaderAlive/40)%2));
+	//          airSetState(&airBoard, 5, 0);
+	//        }
+			else if(leftLoaderAlive == 70) {
+				airSetState(&airBoard, 5, 0);
+			}
+			else if(leftLoaderAlive == 30) {
+				airSetState(&airBoard, 4, 1);
+				Ldisc = 1;
+			}
+		leftLoaderAlive--;
+		}
+    	else if(Ldisc == 1) {
+    		leftLoaderAlive--;
+    	}
     }
     else{
           airSetState(&airBoard, 4, 0);
@@ -744,29 +778,42 @@ void left_loader(bool start){
     }
 }
 
-const unsigned int rightLoaderAliveDefalt = 140;
+const unsigned int rightLoaderAliveDefalt = 120;
 unsigned int rightLoaderAlive = 0;
 
 void right_loader(bool start){
     if(start){
-      if(!rightLoaderAlive){
+      if(!rightLoaderAlive && !RSwitch){
         rightLoaderAlive=rightLoaderAliveDefalt;
       }
     }
     else if (rightLoaderAlive){
-        if(rightLoaderAlive == rightLoaderAliveDefalt) {
-            airSetState(&airBoard, 2, 0);   //close upper valve
-            airSetState(&airBoard, 3, 1);   //open lower valve
-        }
-        else if(rightLoaderAlive > 60) {
-            airSetState(&airBoard, 2, 0);
-            airSetState(&airBoard, 3, !((rightLoaderAlive/20)%2)); //close lower valve
-        }
-        else if(rightLoaderAlive > 0) {
-          airSetState(&airBoard, 2, !((rightLoaderAlive/20)%2));
-          airSetState(&airBoard, 3, 0);
-        }
-    rightLoaderAlive--;
+    	if(Rdisc == 0) {
+			if(rightLoaderAlive == rightLoaderAliveDefalt-10) {
+				airSetState(&airBoard, 2, 0);   //close upper valve
+				airSetState(&airBoard, 3, 1);   //open lower valve
+			}
+	//        else if(rightLoaderAlive > 60) {
+	//            airSetState(&airBoard, 2, 0);
+	//            airSetState(&airBoard, 3, !((rightLoaderAlive/40)%2)); //close lower valve
+	//            Rdisc = 1;
+	//        }
+	//        else if(rightLoaderAlive > 0) {
+	//          airSetState(&airBoard, 2, !((rightLoaderAlive/40)%2));
+	//          airSetState(&airBoard, 3, 0);
+	//        }
+			else if(rightLoaderAlive == 70) {
+				airSetState(&airBoard, 3, 0);
+			}
+			else if (rightLoaderAlive == 30) {
+				airSetState(&airBoard, 2, 1);
+				Rdisc = 1;
+			}
+		rightLoaderAlive--;
+    	}
+    	else if(Rdisc == 1) {
+    		rightLoaderAlive--;
+    	}
     }
     else{
       airSetState(&airBoard, 2, 0);
@@ -785,7 +832,9 @@ void pusher(bool start){
   else if(pusherAlive){
     if(pusherAlive == pusherAliveDefault){   //Select Disc and push to centre
         airSetState(&airBoard, 6, 0); //Retrieve right disc to middle
+        A6on = 0;
         airSetState(&airBoard, 7, 0);
+        A7on = 0;
         if (CSwitch||PS4_ButtonPress(TRIANGLE)){
           pusherAlive--;
         }
@@ -795,32 +844,43 @@ void pusher(bool start){
           if ((!rightLoaderAlive && leftLoaderAlive)||
               (!rightLoaderAlive && !leftLoaderAlive && lastDiscIsLeft)){
               airSetState(&airBoard, 6, 1); //Push right disc to middle
+              Rdisc = 0;
+              A6on = 1;
           }
           else if ((!leftLoaderAlive && rightLoaderAlive)||
               (!rightLoaderAlive && !leftLoaderAlive && !lastDiscIsLeft)){
               airSetState(&airBoard, 7, 1); //Push left disc to middle
+              A7on = 1;
+              Ldisc = 0;
           }
         }
         if(pusherAlive == pusherAliveDefault-55){ // Retrieve piston and check if centre have disc
             if (!LSwitch && !RSwitch && !(DS4.triangle)){
                 airSetState(&airBoard, 6, 0); //Retrieve right disc piston
+                A6on = 0;
                 airSetState(&airBoard, 7, 0); //Retrieve left disc piston
+                A7on = 0;
                 pusherAlive=pusherAliveDefault+50;
             }
             else{
               airSetState(&airBoard, 6, 0); //Retrieve right disc piston
               airSetState(&airBoard, 7, 0); //Retrieve left disc to piston
+              Cdisc = 1;
+//              if(LSwitch)
+            	  A7on = 0;
+//              if(RSwitch)
+            	  A6on = 0;
             }
         }
         if(pusherAlive == 1){ //Raise Hoist & Load Other Disc
           switch(LMR){
             case -1:
               left_loader(true);
-              lastDiscIsLeft=true;
+              lastDiscIsLeft=false;
               break;
             case 1:
               right_loader(true);
-              lastDiscIsLeft=false;
+              lastDiscIsLeft=true;
               break;
             default:
                 if(lastDiscIsLeft){
@@ -849,7 +909,9 @@ void pusher(bool start){
   }
   else{
       airSetState(&airBoard, 6, 0); //Retrieve right disc to middle
+      A6on = 0;
       airSetState(&airBoard, 7, 0);
+      A7on = 0;
   }
 }
 
@@ -869,15 +931,20 @@ void shooter(bool start){
         Servo1.command[0] = ROLL_DEFAULT;
         Servo1.command[1] = PITCH_MIN;
         Servo1.command[2] = RAMMER_MIN;
-        airSetState(&airBoard, 8, 1);
+        if(!LSwitch && !RSwitch) {
+        	airSetState(&airBoard, 8, 1);
+        }
+        else {
+        	shooterAlive++;
+        }
         currentCount = 0;
       }
-      if (shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-40){ // Central Platform follow Pitch and Roll
+      if (shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-50){ // Central Platform follow Pitch and Roll
             int servoRoll = constrain(ROLL_DEFAULT + getRoll()*SERVO_STEP_ROLL, ROLL_MAX, ROLL_MIN);
             if (servoRoll > Servo1.command[0]) Servo1.command[0]+= (servoRoll > Servo1.command[0] + 20)?2:1;
             else if (servoRoll < Servo1.command[0]) Servo1.command[0]-= (servoRoll < Servo1.command[0] - 20)?2:1;
       }
-      if(shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-40){
+      if(shooterAlive < shooterAliveDefault-20 && shooterAlive > shooterAliveDefault-50){
             int servoPitch = constrain(PITCH_MIN + getPitch()*SERVO_STEP_PITCH, PITCH_MAX, PITCH_MIN);
             if (servoPitch > Servo1.command[1] )Servo1.command[1]+=(servoPitch > Servo1.command[1] + 10)?6:2;
             else if (servoPitch < Servo1.command[1] )Servo1.command[1]-=(servoPitch < Servo1.command[1] - 20)?2:1;
@@ -913,16 +980,21 @@ void shooter(bool start){
         airSetState(&airBoard, 8, 0);
         //pusher(true);
       }
-      if(shooterAlive == shooterAliveDefault-160){
+      if(shooterAlive == shooterAliveDefault-140){
         Servo1.command[0] = ROLL_DEFAULT;
       }
-      if(shooterAlive == shooterAliveDefault-179){
+      if(shooterAlive == shooterAliveDefault-170){
         Servo1.command[1] = PITCH_MIN;
       }
-      if (currentCount>50){
-        pusher(true);
+      if(!((airBoard.state)&(1<<8))&&CSwitch){
+        Servo1.command[0] = ROLL_DEFAULT;
+        Servo1.command[1] = PITCH_MIN;
       }
-      if(shooterAlive == 1 && currentCount < 50){
+      if (currentCount>90){
+        pusher(true);
+        Cdisc = 0;
+      }
+      if(shooterAlive == 1 && currentCount < 100){
         Servo1.command[2] = RAMMER_MIN;
         shooterAlive=-50;
         Servo1.command[0]=constrain(ROLL_DEFAULT + getRoll()*SERVO_STEP_ROLL, ROLL_MAX, ROLL_MIN);
@@ -977,6 +1049,7 @@ void reload_and_shoot(void) {
       pusher(false);
       left_loader(false);
       right_loader(false);
+      reloadInit = 1;	//make sure the robot will load 2 ari disc after entering loading zone for a 2nd time
 
 }
 
@@ -1040,8 +1113,12 @@ void runManual(void) {
     M[3].SetPoint = pitchAngle - rollAngle;
 */
 
-    int moveRoll = AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), HatDeadzone);
-    int movePitch = AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), HatDeadzone);
+    int moveRoll = 0;
+    moveRoll += AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), HatDeadzone)/20;
+    moveRoll += AddDeadZone((int)((uint16_t)(DS4.hat_right_x) - 128), 70)*20;
+    int movePitch = 0;
+    movePitch += AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), HatDeadzone);
+    movePitch += AddDeadZone((int)((uint16_t)(DS4.hat_right_y) - 128), 60)*5;
 
     if (!moveRoll && !movePitch){
       M[2].SetPoint=0;
@@ -1055,8 +1132,8 @@ void runManual(void) {
       }
       else{
         accuprchange += moveRoll;
-        setPitchRoll(lastpr,getRoll()+accuprchange/20);
-        if(accuprchange/10){
+        setPitchRoll(lastpr,getRoll()+accuprchange/70);
+        if(accuprchange/70){
           accuprchange=0;
         }
       }
@@ -1069,8 +1146,8 @@ void runManual(void) {
       }
       else{
         accuprchange += movePitch;
-        setPitchRoll(getPitch()+accuprchange/20,lastpr);
-        if(accuprchange/10){
+        setPitchRoll(getPitch()+accuprchange/30,lastpr);
+        if(accuprchange/30){
           accuprchange=0;
         }
       }
@@ -1125,32 +1202,40 @@ void runManual(void) {
 }
 
 void runAuto(PositionStates *set, int pos) {
-  if (pos == 0 || pos == 8){
-    airSetState(&airBoard, 3, 0);
-    airSetState(&airBoard, 5, 0);
-    airSetState(&airBoard, 6, 0);
-    airSetState(&airBoard, 7, 0);
-    airSetState(&airBoard, 8, 0);
-    Servo1.command[0] = (ROLL_MIN+ROLL_MAX)/2;
-    Servo1.command[1] = PITCH_MIN;
-    Servo1.command[2] = RAMMER_MIN;
-    shooterAlive=0;
-    pusherAlive = 0;
-    airSetState(&airBoard, 2, 1);
-    airSetState(&airBoard, 4, 1);
-    setPitchRoll(set[pos].pitch, set[pos].roll);
-    XPID(distanceSum, set[pos].x);
-    YPID((int)yDistance, set[pos].y);
-    left_loader(true);
-    right_loader(true);
-    pusher(true);
+  if (pos == 0 || pos == 8) {
+		airSetState(&airBoard, 3, 0);
+		airSetState(&airBoard, 5, 0);
+		airSetState(&airBoard, 6, 0);
+		airSetState(&airBoard, 7, 0);
+		airSetState(&airBoard, 8, 0);
+		Servo1.command[0] = ROLL_DEFAULT;
+		Servo1.command[1] = PITCH_MIN;
+		Servo1.command[2] = RAMMER_MIN;
+		shooterAlive = 0;
+		pusherAlive = 0;
+		leftLoaderAlive = 0;
+		rightLoaderAlive = 0;
+		if(reloadInit == 1 && pos == 8) {
+			Ldisc = 1;
+			Rdisc = 1;
+		}
+		if(reloadInit == 0 && pos == 8) {
+			Ldisc = 0;
+			Rdisc = 0;
+		}
+		airSetState(&airBoard, 2, 1);
+		airSetState(&airBoard, 4, 1);
+		setPitchRoll(set[pos].pitch, set[pos].roll);
+		XPID(distanceSum, set[pos].x);
+		YPID((int)yDistance, set[pos].y);
+		left_loader(true);
+		right_loader(true);
+		pusher(true);
   }
   else{
       YPID((int)yDistance, set[pos].y);
       XPID(distanceSum, set[pos].x);
-      if(!setPitchRoll(set[pos].pitch, set[pos].roll) && !AddDeadZone(distanceSum-set[pos].x, 10)){
-          reload_and_shoot();
-      }
+      setPitchRoll(set[pos].pitch, set[pos].roll);
   }
   M[4].SetPoint = set[pos].shootspd;
   M[5].SetPoint = set[pos].shootspd;
@@ -1159,9 +1244,9 @@ void runAuto(PositionStates *set, int pos) {
 
 void castLimit(void){
   //XMovement Speed
-  M[0].SetPoint = accelerationLimit(M[0].SetPoint, xOldMotorSpeed, acceleration_limit, 3*acceleration_limit);
+  M[0].SetPoint = accelerationLimit(M[0].SetPoint, xOldMotorSpeed, acceleration_limit,2* acceleration_limit);
   M[0].SetPoint = constrain(M[0].SetPoint, upLimit, lowLimit);
-  M[1].SetPoint = accelerationLimit(M[1].SetPoint, xOldMotorSpeed, acceleration_limit, 3*acceleration_limit);
+  M[1].SetPoint = accelerationLimit(M[1].SetPoint, xOldMotorSpeed, acceleration_limit,2* acceleration_limit);
   M[1].SetPoint = constrain(M[1].SetPoint, upLimit, lowLimit);
   xOldMotorSpeed = (M[0].SetPoint+M[1].SetPoint)/2;
   //Shooter Speed-
@@ -1185,14 +1270,108 @@ void castLimit(void){
   }
 }
 
-//relocate is a term used when repositioning artilleries
-void relocate(void) {
 
+void EEPwrite(PositionStates *set, int pos){
+    uint16_t flattened[5]= {};
+    flattened[0] = ((set[pos].pitch));
+    flattened[1] = ((set[pos].roll));
+    flattened[2] = ((set[pos].shootspd));
+    flattened[3] = ((set[pos].x));
+    flattened[4] = ((set[pos].y));
+
+//      flattened[0] = ((90));
+//      flattened[1] = ((555));
+//      flattened[2] = ((314));
+//      flattened[3] = ((110));
+//      flattened[4] = ((122));
+
+    static uint8_t buf[10] = {0};
+
+    static I2CEepromFileConfig  eepcfg =
+    {
+     0,
+     _24LC02_SIZE_,
+     _24LC02_SIZE_,
+     _24LC024H_PAGESIZE_,
+     MS2ST(5),
+     &I2CD1,
+     0b1010000,
+     buf
+   };
+
+    I2CEepromFileStream file;
+    I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+
+    if (current_running_menu->data.app == &red){
+  //    eepcfg.barrier_low = 50;
+  //    eepcfg.barrier_hi = 149;
+      eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+
+    }else if (current_running_menu->data.app == &blue){
+  //   eepcfg.barrier_low = 150;
+ //    eepcfg.barrier_hi = 249;
+      eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+    }
+
+    for(int i = 0; i < 5; i++){
+      if (EepromWriteHalfword((EepromFileStream *)&file, flattened[i]) != 2){
+        return;
+      }
+      chThdSleepMilliseconds(50);
+    }
+
+    eepfs_close((EepromFileStream *)&file);
+
+    return;
 }
 
-void runMode(PositionStates *set, int pos){
+
+void EEPread(PositionStates *set, int pos){
+  uint16_t flattened[10]= {};
+
+  static uint8_t buf[10] = {0};
+
+  static I2CEepromFileConfig  eepcfg =
+  {
+   0,
+   _24LC02_SIZE_,
+   _24LC02_SIZE_,
+   _24LC024H_PAGESIZE_,
+   MS2ST(5),
+   &I2CD1,
+   0b1010000,
+   buf
+ };
+
+  I2CEepromFileStream file;
+  I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
+
+  if (current_running_menu->data.app == &red){
+//    eepcfg.barrier_low = 50;
+//    eepcfg.barrier_hi = 149;
+    eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
+
+  }else if (current_running_menu->data.app == &blue){
+//   eepcfg.barrier_low = 150;
+//    eepcfg.barrier_hi = 249;
+    eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
+  }
+
+//    chThdSleepMilliseconds(100);
+
+  for(int i = 0; i < 5; i++){
+    flattened[i] = EepromReadHalfword((EepromFileStream *) &file);
+  }
+
+  set[pos].pitch = ((int16_t)(flattened[0]));
+  set[pos].roll = ((int16_t)(flattened[1]));
+  set[pos].shootspd = ((int16_t)(flattened[2]));
+  set[pos].x = ((int16_t)(flattened[3]));
+  set[pos].y = ((int16_t)(flattened[4]));
+
+  eepfs_close((EepromFileStream *)&file);
+
 
 }
-
 
 

@@ -659,7 +659,7 @@
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D13) |    \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D14) |    \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D15) |    \
-                                     PIN_PUPDR_FLOATING(GPIOD_DIP) |        \
+                                     PIN_PUPDR_PULLUP(GPIOD_DIP) |        \
                                      PIN_PUPDR_FLOATING(GPIOD_TIM4_CH1) |   \
                                      PIN_PUPDR_FLOATING(GPIOD_TIM4_CH2) |   \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D0) |     \

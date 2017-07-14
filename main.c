@@ -121,6 +121,12 @@ int main(void) {
   //wdgStart(&WDGD1, &wdgcfg);
   driversInit();
 
+  if (palReadPad(GPIOD, GPIOD_DIP) == PAL_LOW){
+	  ds4_pairing = TRUE;
+  }else{
+	  ds4_pairing = FALSE;
+  }
+
   palClearPad(GPIOD, GPIOD_LCD_DISP);
   palClearPad(GPIOI, GPIOI_LCD_BLCTRL);
 

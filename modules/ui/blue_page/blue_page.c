@@ -540,6 +540,7 @@ void guiUpdate_b(void){
 //    gwinPrintf(Console, "D_R %4d\033t ", blueStateSet[targetPosition].roll - getRoll());
     gwinPrintf(Console, "D_X %4d\033t\r\n", blueStateSet[targetPosition].x - distanceSum);
     gwinPrintf(Console, "D_Y %4d\033t\r\n", (int)yDistance - blueStateSet[targetPosition].y);
+    gwinPrintf(Console, "LMR %4d\033t\033t\r\n", LMR);
 //	gwinPrintf(Console, "SPUS2 %3d\033t  ", Servo1.command[2]);
 //	gwinPrintf(Console, "SPIT1 %3d\033t  ", Servo1.command[1]);
 //	gwinPrintf(Console, "SROL0 %3d\033t  ", Servo1.command[0]);

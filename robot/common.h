@@ -36,7 +36,7 @@ enum shooter_states {
 };
 
 typedef struct{
-  int id,  x, y, pitch, roll, shootspd;
+  int16_t id,  x, y, pitch, roll, shootspd;
 }PositionStates;
 
 
@@ -103,8 +103,8 @@ void castLimit(void);
 #define	ROLL_MAX			ROLL_DEFAULT + 65
 
 #define ZERO_ROLL			30068
-#define ROLL_RATIO			(float)21.353
-#define SERVO_STEP_ROLL 	(float)(500.0-425.0)/(428.0-0.0)
+#define ROLL_RATIO			(float)19.553
+#define SERVO_STEP_ROLL 	(float)(500.0-425.0)/(440.0-0.0)
 
 #define RAMMER_MIN	290
 #define RAMMER_MAX	RAMMER_MIN + 200
@@ -202,6 +202,8 @@ extern int A7on;
 
 extern int prevPosition;
 extern int defenseState;
+
+extern int LMR;
 
 extern unsigned int rightLoaderAlive;
 

@@ -246,7 +246,7 @@ void UpdatePosition(void) {
 	    //TODO: tune the proportionality constant
     lDistanceSum =((float) LencoderSum * 13000.0 / 355603) + xDistanceOffset;
     rDistanceSum =((float) RencoderSum * 13000.0 / 335289) + xDistanceOffset;
-    distanceSum = ((float) encoderSum * 13000.0 / (669352)) + xDistanceOffset;//Measured from testrun red field 667170erSum * 13000.0 / 333585) + xDistanceOffset;//357559
+//    distanceSum = ((float) encoderSum * 13000.0 / (669352)) + xDistanceOffset;//Measured from testrun red field 667170erSum * 13000.0 / 333585) + xDistanceOffset;//357559
 
 
 
@@ -1068,7 +1068,6 @@ void runManual(void) {
       // Move X Moter
         xMotorSpeed = -AddDeadZone((int)((uint16_t)(DS4.hat_left_x) - 128), 10 );
         xMotorSpeed = xMotorSpeed*5+((xMotorSpeed>0)? 4700:-4700)*(float)xMotorSpeed*xMotorSpeed/13942.0;
-        xMotorSpeed*=2;
     }
     else if (abs(left_head_x) < abs(left_head_y)){
       //Move Y
@@ -1270,108 +1269,6 @@ void castLimit(void){
   }
 }
 
-//void EEPwrite(PositionStates *set, int pos){
-//    uint16_t flattened[5]= {};
-//    flattened[0] = ((set[pos].pitch));
-//    flattened[1] = ((set[pos].roll));
-//    flattened[2] = ((set[pos].shootspd));
-//    flattened[3] = ((set[pos].x));
-//    flattened[4] = ((set[pos].y));
-//
-////      flattened[0] = ((90));
-////      flattened[1] = ((555));
-////      flattened[2] = ((314));
-////      flattened[3] = ((110));
-////      flattened[4] = ((122));
-//
-//    static uint8_t buf[10] = {0};
-//
-//    static I2CEepromFileConfig  eepcfg =
-//    {
-//     0,
-//     _24LC02_SIZE_,
-//     _24LC02_SIZE_,
-//     _24LC024H_PAGESIZE_,
-//     MS2ST(5),
-//     &I2CD1,
-//     0b1010000,
-//     buf
-//   };
-//
-//    I2CEepromFileStream file;
-//    I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
-//
-//    if (current_running_menu->data.app == &red){
-//  //    eepcfg.barrier_low = 50;
-//  //    eepcfg.barrier_hi = 149;
-//      eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
-//
-//    }else if (current_running_menu->data.app == &blue){
-//  //   eepcfg.barrier_low = 150;
-// //    eepcfg.barrier_hi = 249;
-//      eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
-//    }
-//
-//    for(int i = 0; i < 5; i++){
-//      if (EepromWriteHalfword((EepromFileStream *)&file, flattened[i]) != 2){
-//        return;
-//      }
-//      chThdSleepMilliseconds(50);
-//    }
-//
-//    eepfs_close((EepromFileStream *)&file);
-//
-//    return;
-//}
-//
-//
-//void EEPread(PositionStates *set, int pos){
-//  uint16_t flattened[10]= {};
-//
-//  static uint8_t buf[10] = {0};
-//
-//  static I2CEepromFileConfig  eepcfg =
-//  {
-//   0,
-//   _24LC02_SIZE_,
-//   _24LC02_SIZE_,
-//   _24LC024H_PAGESIZE_,
-//   MS2ST(5),
-//   &I2CD1,
-//   0b1010000,
-//   buf
-// };
-//
-//  I2CEepromFileStream file;
-//  I2CEepromFileOpen(&file, &eepcfg, EepromFindDevice("24XX"));
-//
-//  if (current_running_menu->data.app == &red){
-////    eepcfg.barrier_low = 50;
-////    eepcfg.barrier_hi = 149;
-//    eepfs_lseek(&file, _CAL_RED_POSSTATE(pos));
-//
-//  }else if (current_running_menu->data.app == &blue){
-////   eepcfg.barrier_low = 150;
-////    eepcfg.barrier_hi = 249;
-//    eepfs_lseek(&file, _CAL_BLUE_POSSTATE(pos));
-//  }
-//
-////    chThdSleepMilliseconds(100);
-//
-//  for(int i = 0; i < 5; i++){
-//    flattened[i] = EepromReadHalfword((EepromFileStream *) &file);
-//  }
-//
-//  set[pos].pitch = ((int16_t)(flattened[0]));
-//  set[pos].roll = ((int16_t)(flattened[1]));
-//  set[pos].shootspd = ((int16_t)(flattened[2]));
-//  set[pos].x = ((int16_t)(flattened[3]));
-//  set[pos].y = ((int16_t)(flattened[4]));
-//
-//  eepfs_close((EepromFileStream *)&file);
-//
-//
-//}
 
 void EEPwrite(PositionStates *set, int pos){
     uint16_t flattened[5]= {};

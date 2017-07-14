@@ -1,6 +1,4 @@
-/*
- * http://www.psdevwiki.com/ps4/DS4-BT#HID_features_reports
- */
+
 #include "ch.h"
 #include "hal.h"
 
@@ -52,21 +50,19 @@
 #define INQUIRY_INTERVAL 5
 
 static bd_addr_t ds4_bt_addr;
-static bd_addr_t ds4_comp_addr;
 static uint16_t l2cap_ctrl_cid = 0;
 static uint16_t l2cap_int_cid = 0;
 static bool request_full_report = false;
 static bool ds4bt_need_write = false;
 static bool ds4bt_connected = false;
 static bool ds4bt_incoming = false;
-bool ds4_pairing = false;
 
 static btstack_packet_callback_registration_t hci_event_callback_registration;
 
 static uint8_t buf[79] = {0};
 static void ds4bt_send(void){
-  buf[0] = 0x52;//0x05 is Set report(4bit), 0x00(2bit) is parameter, 0x02 is output(2bit)
-  buf[1] = 0x11;//protocol code
+  buf[0] = 0x52;
+  buf[1] = 0x11;
   buf[2] = 0x80;
   buf[4] = 0xFF;
   memcpy(&buf[7], (uint8_t*)&DS4_cmd, sizeof(DS4_command_t));
@@ -75,9 +71,6 @@ static void ds4bt_send(void){
 }
 
 void ds4bt_process_packet(uint8_t *packet, uint16_t size){
-	//HID input reports 0x0a(4-bits): transaction type is DATA
-	//0x01: report type is input
-	//0x11: protocol code
   if ((size == 79) && (packet[0] == 0xA1) && (packet[1] == 0x11))
     memcpy(&DS4, &(packet[4]), sizeof(DS4_status_t));
 }
@@ -104,10 +97,10 @@ static void l2cap_packet_handler(uint8_t packet_type, uint16_t channel,
     } else if (hci_event_packet_get_type(packet) == L2CAP_EVENT_CAN_SEND_NOW
         && l2cap_ctrl_cid == channel) {
       if (request_full_report) {
-        uint8_t buf[2];//hid feature report
-        buf[0] = 0x43;//0x04 get report, 0x03 get feature
-        buf[1] = 0x02;//report id
-        l2cap_send(l2cap_ctrl_cid, buf, 2);//buffer size
+        uint8_t buf[2];
+        buf[0] = 0x43;
+        buf[1] = 0x02;
+        l2cap_send(l2cap_ctrl_cid, buf, 2);
         request_full_report = false;
         ds4bt_need_write = true;
       }
@@ -133,9 +126,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel,
       // bt stack activated, get started - set local name
       if (btstack_event_state_get_state(packet) == HCI_STATE_WORKING) {
         //uinfo("Inquiry");
-        if (ds4_pairing)
-            hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
-        //hci_send_cmd(&hci_inquiry_cancel);
+        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
         break;
       }
       break;
@@ -175,18 +166,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel,
     case HCI_EVENT_PIN_CODE_REQUEST:
       // inform about pin code request
       //uinfo("Enter 0000");
-      //memcpy(ds4_comp_addr, ds4_bt_addr, sizeof(ds4_bt_addr));
-//      if (ds4_bt_addr[0] == 144 &&
-//          ds4_bt_addr[1] == 251 &&
-//          ds4_bt_addr[2] == 166 &&
-//          ds4_bt_addr[3] == 209 &&
-//          ds4_bt_addr[4] == 192 &&
-//          ds4_bt_addr[5] == 203 )
-//      {
-        //hci_send_cmd(&hci_pin_code_request_reply, &ds4_bt_addr, 4, "0000");
-//      }else{
-        hci_send_cmd(&hci_pin_code_request_reply, &ds4_bt_addr, 4, "0000");
-//      }
+      hci_send_cmd(&hci_pin_code_request_reply, &ds4_bt_addr, 4, "0000");
       break;
 
     case HCI_EVENT_CONNECTION_COMPLETE:

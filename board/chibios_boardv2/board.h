@@ -852,7 +852,7 @@
 #define VAL_GPIOD_PUPDR             (PIN_PUPDR_FLOATING(GPIOD_FMC_D2) |     \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D3) |     \
                                      PIN_PUPDR_FLOATING(GPIOD_SDIO_CMD) |   \
-                                     PIN_PUPDR_FLOATING(GPIOD_LCD_G7) |     \
+                                     PIN_PUPDR_PULLUP(GPIOD_LCD_G7) |     \
                                      PIN_PUPDR_FLOATING(GPIOD_BUT7) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_USART2_TX) |  \
                                      PIN_PUPDR_FLOATING(GPIOD_USART2_RX) |  \
@@ -860,7 +860,7 @@
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D13) |    \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D14) |    \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D15) |    \
-                                     PIN_PUPDR_FLOATING(GPIOD_DIP) |        \
+                                     PIN_PUPDR_PULLUP(GPIOD_DIP) |        \
                                      PIN_PUPDR_FLOATING(GPIOD_TIM4_CH1) |   \
                                      PIN_PUPDR_FLOATING(GPIOD_TIM4_CH2) |   \
                                      PIN_PUPDR_FLOATING(GPIOD_FMC_D0) |     \

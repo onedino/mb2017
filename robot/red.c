@@ -20,6 +20,7 @@
 #include "distancesensor.h"
 #include "red.h"
 #include "drivers.h"
+#include "eeprom_driver.h"
 /*
  * for searching purpose
  * START_STATE_r
@@ -519,14 +520,14 @@ PositionStates redStateSet[10] =
 //   {        ,       ,       ,       ,       ,           },
 
    {0		, -500  ,0		,0		,0		,0          }, //Start Zone
-   {1		, 3400 	,335    ,131    ,-73    ,905        },
-   {2       , 6136 	,250    ,220    ,83     ,1050       },
-   {3       , 7400	,250	,239	,-35	,710        }, //Middle Near
-   {4       , 7671	,291	,242	,48 	,1070       }, //Middle Middle
-   {5       , 9049	,399	,181	,168    ,1360       }, //Middle Far
-   {6       , 10136	,250	,232    ,150    ,1050       },
-   {7       , 11400	,335	,134    ,-67	,905        },
-   {8       , 12475	,0		,108	,5		,0          },  //Loading Zone
+   {1		, 3223 	,320    ,130    ,-90    ,905        },
+   {2       , 6565 	,310    ,222    ,124     ,1050       },
+   {3       , 7204	,50		,242	,-8		,710        }, //Middle Near
+   {4       , 8272	,298	,226	,87 	,1070       }, //Middle Middle
+   {5       , 9051	,211	,173	,202    ,1300       }, //Middle Far
+   {6       , 10731	,228	,222    ,126    ,1050       },
+   {7       , 11500	,451	,127    ,-94	,905        },
+   {8       , 12600	,0		,108	,5		,0          },  //Loading Zone
    {9		, 6000	,0		,1		,-1	 	,1800		}	//hit enemy frisbee
 };
 
@@ -538,10 +539,13 @@ void RunPath_r(void) {
     distanceSum = (int32_t)((float) encoderSum * 13000.0 / 667170) + xDistanceOffset;//667170
 
 	if (!init_r){
+	  encoderSum = 0;
       airSetState(&airBoard, 2, 1);
       airSetState(&airBoard, 4, 1);
       airSetState(&airBoard, 0, 1);
       airSetState(&airBoard, 1, 1);
+      encoder_resetcount(0);
+	  encoder_resetcount(1);
 ////      xDistanceOffset = redStateSet[0].x;
 //      if (!BSwitch && !PS4_ButtonPress(TRIANGLE)){
 //        M[6].SetPoint = -100;
@@ -573,7 +577,7 @@ void RunPath_r(void) {
 	        else if(DS4.l1) {
 		      runAuto(redStateSet, targetPosition);
 		    }
-	        if (PS4_ButtonPress(OPTIONS)){
+	        else if (PS4_ButtonPress(OPTIONS)){
 			  encoder_resetcount(0);
 			  encoder_resetcount(1);
 			}
@@ -611,7 +615,7 @@ void RunPath_r(void) {
 		    if(PS4_ButtonPress(RIGHT) && !DS4.r1) {
 		      //Shift the pole aiming at
 		        //For Wizley
-		        targetPosition = constrain(--targetPosition, 8, 0);
+		        targetPosition = constrain(--targetPosition, 9, 0);
 		        if(targetPosition != 9) {
 		        	defenseState = 0;
 		        }
@@ -620,7 +624,7 @@ void RunPath_r(void) {
 		    if(PS4_ButtonPress(LEFT) && !DS4.r1) {
 		        //Shift the pole aiming at
 		        //For Wizley
-		        targetPosition = constrain(++targetPosition, 8, 0);
+		        targetPosition = constrain(++targetPosition, 9, 0);
 		        if(targetPosition != 9) {
 					defenseState = 0;
 				}

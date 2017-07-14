@@ -19,6 +19,8 @@
 #include "airboard.h"
 #include "distancesensor.h"
 #include "red.h"
+#include "drivers.h"
+#include "eeprom_driver.h"
 /*
  * for searching purpose
  * START_STATE_r
@@ -474,195 +476,245 @@ void checkForAuto_r(void) {
 
 
 void runAuto_r(void) {
-//#if IS_MOTOR_0_2016 && IS_MOTOR_1_2016
-//	xMotorSpeed_krpm_r = PID_for_path_krpm_r(distanceSum_r,xCarSetPoint_r,PID_DEADZONE);
-//	m[0].speed_ref_krpm = xMotorSpeed_krpm_r;
-//	m[1].speed_ref_krpm = xMotorSpeed_krpm_r;
-//#elif !IS_MOTOR_0_2016 && !IS_MOTOR_1_2016
-	xMotorSpeed_r = PID_for_path_r(distanceSum,xCarSetPoint_r,PID_DEADZONE);
-//	xMotorSpeed_r = constrain(xMotorSpeed_r, upLimit, lowLimit);
-	M[0].SetPoint = xMotorSpeed_r;
-	M[1].SetPoint = xMotorSpeed_r;
-//#endif
-	//		at reload position
-	if(distanceSum >= xTrack_r[reloadPos]) {
-		airSetState(&airBoard, 2, 0);
-	}
-	if(distanceSum == xCarSetPoint_r) {
-		nextCarState_r = MANUAL_STATE;
-	}
+////#if IS_MOTOR_0_2016 && IS_MOTOR_1_2016
+////	xMotorSpeed_krpm_r = PID_for_path_krpm_r(distanceSum_r,xCarSetPoint_r,PID_DEADZONE);
+////	m[0].speed_ref_krpm = xMotorSpeed_krpm_r;
+////	m[1].speed_ref_krpm = xMotorSpeed_krpm_r;
+////#elif !IS_MOTOR_0_2016 && !IS_MOTOR_1_2016
+//	xMotorSpeed_r = PID_for_path_r(distanceSum,xCarSetPoint_r,PID_DEADZONE);
+////	xMotorSpeed_r = constrain(xMotorSpeed_r, upLimit, lowLimit);
+//	M[0].SetPoint = xMotorSpeed_r;
+//	M[1].SetPoint = xMotorSpeed_r;
+////#endif
+//	//		at reload position
+//	if(distanceSum >= xTrack_r[reloadPos]) {
+//		airSetState(&airBoard, 2, 0);
+//	}
+//	if(distanceSum == xCarSetPoint_r) {
+//		nextCarState_r = MANUAL_STATE;
+//	}
 }
 
 void checkForManual_r(void) {
-	if(nextCarState_r == MANUAL_STATE) {
-		carState_r = MANUAL_STATE;
-	}
+//	if(nextCarState_r == MANUAL_STATE) {
+//		carState_r = MANUAL_STATE;
+//	}
 }
 
 void displayDebug_r(void) {
-	debug_display[0] = LineSensor2016[0].status;//M[0].Board.ADCValue;
-	debug_display[1] = LineSensor2016[0].position;//M[1].Board.ADCValue;
-	debug_display[2] = LineSensor2016[0].position - 1911;
-	debug_display[3] = M[3].Board.ADCValue;
-	debug_display[4] = M[6].Board.ADCValue;//M[4].Feedback;	//left to mid
-	debug_display[5] = DS4.tpad_click;//M[5].Feedback;	//right to mid
-    debug_display[6] = DS4.tpad_info[0].finger[0].x;
+	debug_display[0] = encoder1_2.delta_count[0];//M[0].Board.ADCValue;
+	debug_display[1] = encoder1_2.delta_count[1];//M[1].Board.ADCValue;
+//	debug_display[2] = LineSensor2016[0].position - 1911;
+//	debug_display[3] = M[3].Board.ADCValue;
+//	debug_display[4] = M[6].Board.ADCValue;//M[4].Feedback;	//left to mid
+//	debug_display[5] = DS4.tpad_click;//M[5].Feedback;	//right to mid
+//    debug_display[6] = DS4.tpad_info[0].finger[0].x;
 //	debug_display[7] = DS4.tpad_info[0].finger[0].y;
 //    debug_display[8] = DS4.tpad_info[0].finger[0].is_touching;
-    debug_display[9] = targetPosition;
+//    debug_display[9] = targetPosition;
 }
 
-PositionStates redStateSet[9] =
+PositionStates redStateSet[10] =
 {
 // {id      ,x      ,y      ,pitch  ,roll   ,shootspd   },
 //   {        ,       ,       ,       ,       ,           },
 
    {0		, -500  ,0		,0		,0		,0          }, //Start Zone
-   {1		, 4621	,250	,190	,140	,1010       },
-   {2       , 6246	,250	,210	,50 	,1045       },
-   {3       , 7400	,250	,240	,0	    ,710        }, //Middle Near
-   {4       , 7236	,250	,235	,60 	,1070       }, //Middle Middle
-   {5       , 7435	,250	,130	,120    ,1345       }, //Middle Far
-   {6       , 9709	,250	,210    ,50     ,1045       },
-   {7       , 10767	,250	,74	    ,-20	,930        },
-   {8       , 12500	,0		,108	,5		,0          }  //Loading Zone
+   {1		, 3223 	,320    ,130    ,-90    ,905        },
+   {2       , 6425 	,309    ,222    ,124     ,1050       },
+   {3       , 7204	,50		,242	,-8		,710        }, //Middle Near
+   {4       , 7339	,312	,227	,87 	,1070       }, //Middle Middle
+   {5       , 9051	,211	,173	,202    ,1300       }, //Middle Far
+   {6       , 10316	,229	,222    ,125    ,1050       },
+   {7       , 11400	,335	,127    ,-96	,905        },
+   {8       , 12475	,0		,108	,5		,0          },  //Loading Zone
+   {9		, 6000	,0		,1		,-1	 	,1800		}	//hit enemy frisbee
 };
+
 bool init_r = false;
+
 void RunPath_r(void) {
+
 	UpdatePosition();
+    distanceSum = (int32_t)((float) encoderSum * 13000.0 / 667170) + xDistanceOffset;//667170
 
 	if (!init_r){
       airSetState(&airBoard, 2, 1);
       airSetState(&airBoard, 4, 1);
       airSetState(&airBoard, 0, 1);
       airSetState(&airBoard, 1, 1);
-      xDistanceOffset = redStateSet[0].x;
-      if (!BSwitch && !PS4_ButtonPress(TRIANGLE)){
-        M[6].SetPoint = -100;
-      }
-      else{
-        M[6].SetPoint = 0;
-        if (!DS4.circle){
-          init_r = true;
-        }
-      }
+      encoder_resetcount(0);
+	  encoder_resetcount(1);
+////      xDistanceOffset = redStateSet[0].x;
+//      if (!BSwitch && !PS4_ButtonPress(TRIANGLE)){
+//        M[6].SetPoint = -100;
+//      }
+//      else{
+//        M[6].SetPoint = 0;
+//        if (!DS4.circle){
+//          init_r = true;
+//          distanceSum -= 500;
+//        }
+//      }
+      init_r = true;
 	}
-	else{
-        if(DS4.l2_trigger>200) {
-          targetPosition = 8; //reload position
-          firstPush=false;
-          leftDisc=false;
-          rightDisc=false;
-          runAuto(redStateSet, targetPosition);
+	else {
+	        if(DS4.l2_trigger>200) {
+	          targetPosition = 8; //reload position
+	          firstPush=false;
+	          leftDisc=false;
+	          rightDisc=false;
+	          runAuto(redStateSet, targetPosition);
+	          defenseState = 0;
 
-        }
-        else if(DS4.r2_trigger>200) {
-          targetPosition = 0;
-          runAuto(redStateSet, targetPosition);
-        }
-        else if(DS4.l1) {
-	      runAuto(redStateSet, targetPosition);
-	    }
-	    else{
-	         //Manual Mode
-	        //updateData_r();
-	        runManual();
-	        //checkForAuto_r();
-	    }
-
-	    if(PS4_ButtonPress(SQUARE)) {
-	      redStateSet[targetPosition].pitch = getPitch();
-	      redStateSet[targetPosition].roll = getRoll();
-	      redStateSet[targetPosition].x = distanceSum;
-	      redStateSet[targetPosition].y = yDistance;
-	      redStateSet[targetPosition].shootspd = (M[4].SetPoint+M[5].SetPoint)/2;
-	    }
-	//Update position according to pole aiming
-	    if(PS4_ButtonPress(RIGHT) && !DS4.r1) {
-	      //Shift the pole aiming at
-	        //For Wizley
-	        targetPosition = constrain(--targetPosition, 8, 0);
-	    }
-
-	    if(PS4_ButtonPress(LEFT) && !DS4.r1) {
-	        //Shift the pole aiming at
-	        //For Wizley
-	        targetPosition = constrain(++targetPosition, 8, 0);
-	    }
-
-	    if(DS4.tpad_click){
-	      switch(DS4.tpad_info[0].finger[0].x / 400){
-	      case 0:
-	        targetPosition=7;
-	        break;
-	      case 1:
-	        targetPosition=6;
-	        break;
-	      case 2:
-	        switch(DS4.tpad_info[0].finger[0].y / 300){
-	        case 0:
-	          targetPosition=5;
-	          break;
-	        case 1:
-	          targetPosition=4;
-	          break;
-	        case 2:
-	          targetPosition=3;
-	          break;
 	        }
-	        break;
-	      case 3:
-	        targetPosition=2;
-	        break;
-	      case 4:
-	        targetPosition=1;
-	        break;
-	      }
-	    }
-
-        if(PS4_ButtonPress(PS)&& DS4.cross) {
-          pusher(true);
-        }
-
-	    if(DS4.cross) {
-	      //Reset all pneumatic to initial mode
-	       // airSetState(&airBoard, 0, 0);
-	       // airSetState(&airBoard, 1, 0);
-	        airSetState(&airBoard, 2, 0);
-	        airSetState(&airBoard, 3, 0);
-	        airSetState(&airBoard, 4, 0);
-	        airSetState(&airBoard, 5, 0);
-	        airSetState(&airBoard, 6, 0);
-	        airSetState(&airBoard, 7, 0);
-	        airSetState(&airBoard, 8, 0);
-	        Servo1.command[0] = (ROLL_MIN+ROLL_MAX)/2;
-	        Servo1.command[1] = PITCH_MIN;
-	        Servo1.command[2] = RAMMER_MIN;
-	        shooterAlive=0;
-	    }
-
-
-	    if(DS4.circle) {
-	        airSetState(&airBoard, 0,1);//base
-	        airSetState(&airBoard, 1,1);//base
-	        if (targetPosition != 8 && targetPosition != 0){
-	           reload_and_shoot();
+	        else if(DS4.r2_trigger>200) {
+	          targetPosition = 0;
+	          runAuto(redStateSet, targetPosition);
+	          defenseState = 0;
 	        }
-	    }
-	    else if ((airBoard.state)&(1<<8)){
-	      int servoRoll = constrain(ROLL_DEFAULT + getRoll()*SERVO_STEP_ROLL, ROLL_MAX, ROLL_MIN);
-	      if (servoRoll > Servo1.command[0]) Servo1.command[0]+= (servoRoll > Servo1.command[0] + 20)?3:1;
-	      else if (servoRoll < Servo1.command[0]) Servo1.command[0]-= (servoRoll < Servo1.command[0] - 20)?2:1;
+	        else if(DS4.l1) {
+		      runAuto(redStateSet, targetPosition);
+		    }
+	        else if (PS4_ButtonPress(OPTIONS)){
+			  encoder_resetcount(0);
+			  encoder_resetcount(1);
+			}
+//	        else if(PS4_ButtonPress(OPTIONS)) {
+//	        	if(defenseState == 0) {
+//	        		prevPosition = targetPosition;
+//	        		defenseState = 1;
+//	        		targetPosition = 9;
+//	        	}
+//	        	else if(defenseState == 1) {
+//					targetPosition = prevPosition;
+//					defenseState = 0;
+//				}
+//	        }
+		    else{
+		        runManual();
+		    }
 
-	      int servoPitch = constrain(PITCH_MIN + getPitch()*SERVO_STEP_PITCH, PITCH_MAX, PITCH_MIN);
-	      if (servoPitch > Servo1.command[1] )Servo1.command[1]+=(servoPitch > Servo1.command[1] + 20)?2:1;
-	      else if (servoPitch < Servo1.command[1] )Servo1.command[1]-=(servoPitch < Servo1.command[1] - 20)?2:1;
+	        if(DS4.r1){
+			  if(PS4_ButtonPress(SQUARE)) {
+				EEPread(redStateSet, targetPosition);
 
-	    }
+			  }
+			}
+			else if(PS4_ButtonPress(SQUARE)) {
+			  redStateSet[targetPosition].pitch = getPitch();
+			  redStateSet[targetPosition].roll = getRoll();
+			  redStateSet[targetPosition].x = distanceSum;
+			  redStateSet[targetPosition].y = yDistance;
+			  redStateSet[targetPosition].shootspd = (M[4].SetPoint+M[5].SetPoint)/2;
+
+			  EEPwrite(redStateSet, targetPosition);
+			}
+		//Update position according to pole aiming
+		    if(PS4_ButtonPress(RIGHT) && !DS4.r1) {
+		      //Shift the pole aiming at
+		        //For Wizley
+		        targetPosition = constrain(--targetPosition, 9, 0);
+		        if(targetPosition != 9) {
+		        	defenseState = 0;
+		        }
+		    }
+
+		    if(PS4_ButtonPress(LEFT) && !DS4.r1) {
+		        //Shift the pole aiming at
+		        //For Wizley
+		        targetPosition = constrain(++targetPosition, 9, 0);
+		        if(targetPosition != 9) {
+					defenseState = 0;
+				}
+		    }
+
+//		    if(DS4.tpad_click){
+//		      switch(DS4.tpad_info[0].finger[0].x / 400){
+//		      case 0:
+//		        targetPosition=7;
+//		        break;
+//		      case 1:
+//		        targetPosition=6;
+//		        break;
+//		      case 2:
+//		        switch(DS4.tpad_info[0].finger[0].y / 300){
+//		        case 0:
+//		          targetPosition=5;
+//		          break;
+//		        case 1:
+//		          targetPosition=4;
+//		          break;
+//		        case 2:
+//		          targetPosition=3;
+//		          break;
+//		        }
+//		        break;
+//		      case 3:
+//		        targetPosition=2;
+//		        break;
+//		      case 4:
+//		        targetPosition=1;
+//		        break;
+//		      }
+//		    }
+
+
+
+			if(DS4.cross) {
+			  //Reset all pneumatic to initial mode
+			   // airSetState(&airBoard, 0, 0);
+			   // airSetState(&airBoard, 1, 0);
+				airSetState(&airBoard, 2, 0);
+				airSetState(&airBoard, 3, 0);
+				airSetState(&airBoard, 4, 0);
+				airSetState(&airBoard, 5, 0);
+				airSetState(&airBoard, 6, 0);
+				A6on = 0; A7on = 0;
+				airSetState(&airBoard, 7, 0);
+				airSetState(&airBoard, 8, 0);
+				Servo1.command[0] = ROLL_DEFAULT;
+				Servo1.command[1] = PITCH_MIN;
+				Servo1.command[2] = RAMMER_MIN;
+				shooterAlive=0;
+			}
+			if(PS4_ButtonPress(PS)&& DS4.cross) {
+			  pusher(true);
+			  Cdisc = 0;
+			}
+
+			if(DS4.circle) {
+				airSetState(&airBoard, 0,1);//base
+				airSetState(&airBoard, 1,1);//base
+				if (targetPosition != 8 && targetPosition != 0){
+				   reload_and_shoot();
+				}
+			}
+			else{
+
+			  if ((airBoard.state)&(1<<8)){
+				int servoRoll = constrain(ROLL_DEFAULT + getRoll()*SERVO_STEP_ROLL, ROLL_MAX, ROLL_MIN);
+				if (servoRoll > Servo1.command[0]) Servo1.command[0]+= (servoRoll > Servo1.command[0] + 20)?3:1;
+				else if (servoRoll < Servo1.command[0]) Servo1.command[0]-= (servoRoll < Servo1.command[0] - 20)?2:1;
+
+				int servoPitch = constrain(PITCH_MIN + getPitch()*SERVO_STEP_PITCH, PITCH_MAX, PITCH_MIN);
+				if (servoPitch > Servo1.command[1] )Servo1.command[1]+=(servoPitch > Servo1.command[1] + 20)?2:1;
+				else if (servoPitch < Servo1.command[1] )Servo1.command[1]-=(servoPitch < Servo1.command[1] - 20)?2:1;
+
+			  }
+			  else if (!((airBoard.state)&(1<<8))){
+				Servo1.command[0] = ROLL_DEFAULT;
+				Servo1.command[1] = PITCH_MIN;
+			  }
+			  if(shooterAlive < 110){
+				shooter(false);
+			  }
+
+			}
+		}
+	    castLimit();
+	    displayDebug_r();
+		updateOldPS4Data_r();
+
+
 	}
-    castLimit();
-    displayDebug_r();
-	updateOldPS4Data_r();
-
-
-}

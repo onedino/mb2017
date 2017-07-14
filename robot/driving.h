@@ -73,7 +73,7 @@ typedef enum tagDrivingState {
 
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)
 #define USE_SERVO                   TRUE
-#define SERVO_NUMBER                3
+#define SERVO_NUMBER                8
 #endif
 
 #if !defined(CH_TIME_QUANTUM) || defined(__DOXYGEN__)

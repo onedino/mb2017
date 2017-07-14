@@ -153,6 +153,7 @@ void guiUpdate_r(void){
 //     gwinPrintf(Console_r, "D_R %4d\033t ", redStateSet[targetPosition].roll - getRoll());
      gwinPrintf(Console_r, "D_X %4d\033t\r\n", redStateSet[targetPosition].x - distanceSum);
      gwinPrintf(Console_r, "D_Y %4d\033t\r\n", (int)yDistance - redStateSet[targetPosition].y);
+     gwinPrintf(Console_r, "LMR %4d\033t\033t\r\n", LMR);
 #if IS_MOTOR_0_2016 && IS_MOTOR_1_2016
 //	gwinPrintf(Console_r, "M01X %4d", (int)(m[0].speed_krpm*1000));
 //	gwinPrintf(Console_r, ",%4d", (int)(m[1].speed_krpm*1000));

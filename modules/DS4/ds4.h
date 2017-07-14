@@ -116,6 +116,8 @@ typedef enum{
 extern DS4_status_t DS4;
 extern DS4_command_t DS4_cmd;
 
+static bool ds4_connected;
+
 void DS4_Start(void);
 void DS4_SetLED(uint8_t r, uint8_t g, uint8_t b);
 void DS4_SetFlash(uint8_t ontime, uint8_t offtime);

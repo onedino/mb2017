@@ -81,6 +81,7 @@
 #include "app.h"
 #include "status_bar.h"
 #include "ds4.h"
+#include "ds4bt.h"
 #include "widgets.h"
 
 GHandle ps4Console;
@@ -102,6 +103,14 @@ void ps4_test_main(void *params){
   gwinShow(pageContainer);
   gwinClear(pageContainer);
   gwinPrintf(ps4Console, "PS4 Testing Console\r\n");
+  if (ds4_pairing)
+    gwinPrintf(ps4Console, "PS4 is pairing bluetooth\r\n");
+  else
+    gwinPrintf(ps4Console, "PS4 is not pairing bluetooth\r\n");
+  if (DS4BT_IsConnected)
+      gwinPrintf(ps4Console, "PS4 is connected via bluetooth\r\n");
+  else if (ds4_connected)
+      gwinPrintf(ps4Console, "\r\nPS4 is connected via USB\r\n");
   gwinRedraw(ps4Console);
   ui_event *evt = NULL;
 
