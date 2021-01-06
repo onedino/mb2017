@@ -1,3 +1,4 @@
 # mb2017
 mb2017
-this shit is used in 2017 robocon competition
+Code used for Robocon 2017 competition foe team Virtus
+
